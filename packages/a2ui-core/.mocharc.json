@@ -1,0 +1,6 @@
+{
+  "require": ["tsx/esm"],
+  "extensions": ["ts"],
+  "spec": "src/**/*.test.ts",
+  "node-option": ["experimental-specifier-resolution=node"]
+}

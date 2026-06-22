@@ -1,0 +1,37 @@
+{
+  "name": "@a2ui/core",
+  "version": "0.0.1",
+  "description": "A2UI core - parser, vnode, treeBuilder, and store",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "mocha",
+    "test:parser": "mocha --spec src/test/parser.test.ts"
+  },
+  "dependencies": {
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "chai": "^6.2.2",
+    "mocha": "^11.7.6",
+    "tsup": "^8.0.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5.5.0"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "a2ui-monorepo",
+  "private": true,
+  "version": "0.0.1",
+  "description": "A2UI Playground - AI-powered UI generation platform",
+  "scripts": {
+    "dev:playground": "pnpm --filter a2ui-playground dev",
+    "dev:server": "pnpm --filter a2ui-playground-server dev",
+    "build:core": "pnpm --filter @a2ui/core build",
+    "build:react": "pnpm --filter @a2ui/react build",
+    "build:packages": "pnpm build:core && pnpm build:react",
+    "build:playground": "pnpm --filter a2ui-playground build",
+    "build": "pnpm build:packages && pnpm build:playground",
+    "clean": "pnpm -r exec rm -rf dist node_modules"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
