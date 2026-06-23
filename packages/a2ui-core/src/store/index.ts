@@ -11,28 +11,29 @@
  */
 
 import { createStore } from "zustand/vanilla";
-import type { A2UIStore, A2UIStoreState } from "./types";
+import type { A2UIStore, RenderMap } from "./types";
 import type { Surface, HydrateNode, A2UIError } from "./types";
 
 export type { A2UIStore } from "./types";
 export * from "./types";
 
 /**
- * Store 初始状态
+ * 数据 Map 初始状态（不含 renderMap）
  */
-const initialState: A2UIStoreState = {
-  surfaceMap: {},
-  hydrateNodeMap: {},
-  errorMap: {},
+const EMPTY_DATA = {
+  surfaceMap: {} as Record<string, Surface>,
+  hydrateNodeMap: {} as Record<string, HydrateNode>,
+  errorMap: {} as Record<string, A2UIError>,
 };
 
 /**
  * 创建 store 实例
  */
-function createA2UIStore() {
+function createA2UIStore(renderMap: RenderMap = {}) {
   return createStore<A2UIStore>()((set, get) => ({
     // 初始状态
-    ...initialState,
+    ...EMPTY_DATA,
+    renderMap,
 
     // ===== Surface CRUD =====
 
@@ -145,7 +146,10 @@ function createA2UIStore() {
     // ===== 批量操作 =====
 
     clear: () => {
-      set(initialState);
+      set((state) => ({
+        ...EMPTY_DATA,
+        renderMap: state.renderMap,
+      }));
     },
 
     clearSurface: (surfaceId: string) => {
@@ -186,11 +190,12 @@ let storeInstance: ReturnType<typeof createA2UIStore> | null = null;
 
 /**
  * 初始化全局 store
+ * @param renderMap - 组件渲染映射表，由上层注入（如 a2ui-react 传入 React 渲染函数）
  * 创建单例 store 并返回。若已存在则直接返回现有实例，保证幂等。
  */
-export function initStore(): ReturnType<typeof createA2UIStore> {
+export function initStore(renderMap: RenderMap = {}): ReturnType<typeof createA2UIStore> {
   if (!storeInstance) {
-    storeInstance = createA2UIStore();
+    storeInstance = createA2UIStore(renderMap);
   }
   return storeInstance;
 }
@@ -211,7 +216,11 @@ export function getStore(): ReturnType<typeof createA2UIStore> {
  */
 export function resetStore(): void {
   if (storeInstance) {
-    storeInstance.setState(initialState);
+    const currentRenderMap = storeInstance.getState().renderMap;
+    storeInstance.setState({
+      ...EMPTY_DATA,
+      renderMap: currentRenderMap,
+    });
   }
 }
 

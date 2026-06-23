@@ -17,11 +17,26 @@
 export type VNode = unknown;
 
 /**
+ * 组件渲染函数
+ * 接收 props（来自 JSONLine 协议的 component 数据），返回渲染后的 VNode。
+ * 具体渲染逻辑由上层（如 a2ui-react）注入，core 层不依赖具体 UI 框架。
+ */
+export type ComponentRenderer = (props: Record<string, any>) => VNode;
+
+/**
+ * 组件渲染映射表
+ * key 为组件类型名（如 "Text"、"Button"），value 为对应的渲染函数。
+ */
+export type RenderMap = Record<string, ComponentRenderer>;
+
+/**
  * 错误类型枚举
  */
 export enum ErrorType {
   /** 协议解析错误 */
   PARSE_ERROR = "PARSE_ERROR",
+  /** 组件类型未在 renderMap 中注册对应的渲染函数 */
+  RENDERER_NOT_FOUND = "RENDERER_NOT_FOUND",
 }
 
 /**
@@ -49,8 +64,11 @@ export interface Surface {
   surfaceId: string;
   /** 是否已开始渲染 */
   beginRender: boolean;
-  /** 根节点指针，指向某个 HydrateNode 的 componentId */
-  rootNode: string | null;
+  /**
+   * 根节点指针，直接指向 hydrateNodeMap 中的 HydrateNode 实例。
+   * 空间换时间：避免二次 Map 查找。
+   */
+  rootNode: HydrateNode | null;
 }
 
 /**
@@ -78,6 +96,8 @@ export interface A2UIStoreState {
   hydrateNodeMap: Record<string, HydrateNode>;
   /** 错误映射表：errorId -> A2UIError */
   errorMap: Record<string, A2UIError>;
+  /** 组件渲染映射表：组件类型 -> 渲染函数，由 init(renderMap) 注入 */
+  renderMap: RenderMap;
 }
 
 /**

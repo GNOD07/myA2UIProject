@@ -33,12 +33,7 @@ export type A2UIMessage =
   | BeginRenderingMessage
   | DeleteSurfaceMessage;
 
-export interface HydrateNode {
-  componentId: string;
-  _vnode: any;
-  ownerSurfaceId: string;
-  protocol: string;
-}
+import type { HydrateNode } from "../store/types.js";
 
 export interface ParsedResult {
   surfaces: Record<string, { components: Record<string, any> }>;
@@ -60,6 +55,7 @@ export function parseJsonl(raw: string): A2UIMessage[] {
 }
 
 import { getStore } from "../store/index.js";
+import { ErrorType } from "../store/types.js";
 
 export function parseMessages(messages: any[]): ParsedResult {
   const result: ParsedResult = {
@@ -108,21 +104,48 @@ export function loadJsonlIntoStore(raw: string): ParsedResult {
   const storeState = store.getState();
   const beginRendering = parsed.messagesByType.beginRendering[0];
 
+  // 先将所有组件节点添加到 hydrateNodeMap
   Object.entries(parsed.surfaces).forEach(([surfaceId, surface]) => {
-    const rootNode = beginRendering?.beginRendering.surfaceId === surfaceId ? beginRendering.beginRendering.root : null;
+    Object.entries(surface.components).forEach(([componentId, component]) => {
+      // 从 component.component 中提取组件类型（如 "Text"）和 props
+      const compType = Object.keys(component.component)[0];
+      const compProps = component.component[compType];
+      const renderFn = storeState.renderMap[compType];
+
+      // 检查组件类型是否已在 renderMap 中注册
+      if (!renderFn) {
+        storeState.addError({
+          id: `renderer_not_found-${surfaceId}-${componentId}-${compType}`,
+          type: ErrorType.RENDERER_NOT_FOUND,
+          content: `Component type "${compType}" is not registered in renderMap. Component "${componentId}" in surface "${surfaceId}" will not be rendered.`,
+          surfaceId,
+          componentId,
+        });
+      }
+
+      storeState.addHydrateNode({
+        componentId,
+        // 若 renderMap 中有对应的渲染函数则调用，否则保留原始 component 数据
+        _vnode: renderFn ? renderFn(compProps) : component.component,
+        ownerSurfaceId: surfaceId,
+        protocol: JSON.stringify(component),
+      });
+    });
+  });
+
+  // 再添加 surface，此时 rootNode 可以直接指向 hydrateNodeMap 中的实例
+  Object.entries(parsed.surfaces).forEach(([surfaceId]) => {
+    const rootComponentId = beginRendering?.beginRendering.surfaceId === surfaceId
+      ? beginRendering.beginRendering.root
+      : null;
+    const rootNode = rootComponentId
+      ? storeState.getHydrateNode(rootComponentId) ?? null
+      : null;
+
     storeState.addSurface({
       surfaceId,
       beginRender: !!rootNode,
       rootNode,
-    });
-
-    Object.entries(surface.components).forEach(([componentId, component]) => {
-      storeState.addHydrateNode({
-        componentId,
-        _vnode: component.component,
-        ownerSurfaceId: surfaceId,
-        protocol: JSON.stringify(component),
-      });
     });
   });
 
