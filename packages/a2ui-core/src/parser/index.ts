@@ -97,61 +97,92 @@ export function parseMessages(messages: any[]): ParsedResult {
   return result;
 }
 
-export function loadJsonlIntoStore(raw: string): ParsedResult {
-  const messages = parseJsonl(raw);
-  const parsed = parseMessages(messages);
+/**
+ * 处理单条 A2UI 消息并增量更新 store。
+ *
+ * 这是流式处理的核心：每条消息到达后立即更新 store，
+ * 而不是等所有消息收集完再批量处理。
+ *
+ * 支持的消息类型：
+ *  - surfaceUpdate：注册组件节点 + 创建/更新 Surface
+ *  - dataModelUpdate：数据模型更新（当前仅追踪）
+ *  - beginRendering：标记 Surface 可渲染 + 设置根节点
+ *  - deleteSurface：清空 Surface 及其关联数据
+ */
+export function processMessage(message: A2UIMessage): void {
   const store = getStore();
   const storeState = store.getState();
-  const beginRendering = parsed.messagesByType.beginRendering[0];
 
-  // 先将所有组件节点添加到 hydrateNodeMap
-  Object.entries(parsed.surfaces).forEach(([surfaceId, surface]) => {
-    Object.entries(surface.components).forEach(([componentId, component]) => {
-      // 从 component.component 中提取组件类型（如 "Text"）和 props
+  if ("surfaceUpdate" in message) {
+    const { surfaceId, components } = message.surfaceUpdate;
+
+    // 1. 注册所有组件为 hydrateNode
+    for (const component of components) {
       const compType = Object.keys(component.component)[0];
       const compProps = component.component[compType];
       const renderFn = storeState.renderMap[compType];
 
-      // 检查组件类型是否已在 renderMap 中注册
       if (!renderFn) {
         storeState.addError({
-          id: `renderer_not_found-${surfaceId}-${componentId}-${compType}`,
+          id: `renderer_not_found-${surfaceId}-${component.id}-${compType}`,
           type: ErrorType.RENDERER_NOT_FOUND,
-          content: `Component type "${compType}" is not registered in renderMap. Component "${componentId}" in surface "${surfaceId}" will not be rendered.`,
+          content: `Component type "${compType}" is not registered in renderMap. Component "${component.id}" in surface "${surfaceId}" will not be rendered.`,
           surfaceId,
-          componentId,
+          componentId: component.id,
         });
       }
 
       storeState.addHydrateNode({
-        componentId,
-        // 若 renderMap 中有对应的渲染函数则调用，否则保留原始 component 数据
-        _vnode: renderFn ? renderFn(compProps) : component.component,
+        componentId: component.id,
+        _vnode: renderFn ? renderFn(compProps, component.id) : component.component,
         ownerSurfaceId: surfaceId,
         protocol: JSON.stringify(component),
       });
-    });
-  });
+    }
 
-  // 再添加 surface，此时 rootNode 可以直接指向 hydrateNodeMap 中的实例
-  Object.entries(parsed.surfaces).forEach(([surfaceId]) => {
-    const rootComponentId = beginRendering?.beginRendering.surfaceId === surfaceId
-      ? beginRendering.beginRendering.root
-      : null;
-    const rootNode = rootComponentId
-      ? storeState.getHydrateNode(rootComponentId) ?? null
-      : null;
+    // 2. 确保 Surface 存在（后续 beginRendering 会更新 rootNode）
+    const existingSurface = storeState.getSurface(surfaceId);
+    if (!existingSurface) {
+      storeState.addSurface({
+        surfaceId,
+        beginRender: false,
+        rootNode: null,
+      });
+    }
+  } else if ("dataModelUpdate" in message) {
+    // 数据模型更新：当前仅追踪，后续可扩展 dataModelMap 存储
+    // 保留此分支供未来按 path 更新组件 props
+  } else if ("beginRendering" in message) {
+    const { surfaceId, root } = message.beginRendering;
 
-    storeState.addSurface({
-      surfaceId,
-      beginRender: !!rootNode,
+    // 确保 Surface 存在（处理 beginRendering 先于 surfaceUpdate 到达的边缘情况）
+    const existingSurface = storeState.getSurface(surfaceId);
+    if (!existingSurface) {
+      storeState.addSurface({
+        surfaceId,
+        beginRender: false,
+        rootNode: null,
+      });
+    }
+
+    const rootNode = storeState.getHydrateNode(root) ?? null;
+    storeState.updateSurface(surfaceId, {
+      beginRender: true,
       rootNode,
     });
-  });
-
-  parsed.messagesByType.deleteSurface.forEach((message) => {
+  } else if ("deleteSurface" in message) {
     storeState.clearSurface(message.deleteSurface.surfaceId);
-  });
+  }
+}
 
-  return parsed;
+export function loadJsonlIntoStore(raw: string): ParsedResult {
+  const messages = parseJsonl(raw);
+
+  // 流式处理每条消息 → 增量更新 store
+  for (const message of messages) {
+    processMessage(message);
+  }
+
+  // 返回 ParsedResult 保持向后兼容
+  return parseMessages(messages);
 }

@@ -1,0 +1,22 @@
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"root","component":{"Column":{"children":{"explicitList":["title","header_row","card_row","footer"]},"distribution":"start","alignment":"stretch"}}}]}}
+{"beginRendering":{"surfaceId":"main_surface","root":"root"}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"title","component":{"Text":{"text":{"literalString":"Row + Column 混排布局演示"},"usageHint":"h1"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"header_row","component":{"Row":{"children":{"explicitList":["col_left","col_right"]},"distribution":"spaceBetween","alignment":"stretch"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"col_left","component":{"Column":{"children":{"explicitList":["left_title","left_body"]},"distribution":"start","alignment":"stretch"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"left_title","component":{"Text":{"text":{"literalString":"左侧区块"},"usageHint":"h2"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"left_body","component":{"Text":{"text":{"literalString":"Row 的子元素沿水平轴排列"},"usageHint":"span"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"col_right","component":{"Column":{"children":{"explicitList":["right_title","right_body"]},"distribution":"start","alignment":"stretch"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"right_title","component":{"Text":{"text":{"literalString":"右侧区块"},"usageHint":"h2"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"right_body","component":{"Text":{"text":{"literalString":"每个 Column 内部是垂直排列的 Text 子元素。"},"usageHint":"span"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"card_row","component":{"Row":{"children":{"explicitList":["card_a","card_b","card_c"]},"distribution":"spaceAround","alignment":"stretch"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"card_a","component":{"Column":{"children":{"explicitList":["ca_title","ca_body"]},"distribution":"start","alignment":"center"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"ca_title","component":{"Text":{"text":{"literalString":"卡片 A"},"usageHint":"h3"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"ca_body","component":{"Text":{"text":{"literalString":"让三张卡片均匀分布。"},"usageHint":"span"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"card_b","component":{"Column":{"children":{"explicitList":["cb_title","cb_body"]},"distribution":"start","alignment":"center"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"cb_title","component":{"Text":{"text":{"literalString":"卡片 B"},"usageHint":"h3"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"cb_body","component":{"Text":{"text":{"literalString":"每张卡片是 Column，内部垂直排列标题+正文。"},"usageHint":"span"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"card_c","component":{"Column":{"children":{"explicitList":["cc_title","cc_body"]},"distribution":"start","alignment":"center"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"cc_title","component":{"Text":{"text":{"literalString":"卡片 C"},"usageHint":"h3"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"cc_body","component":{"Text":{"text":{"literalString":"最外层是 Column，依次包含标题 → Row → Row → 脚注。"},"usageHint":"span"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"footer","component":{"Text":{"text":{"literalString":"脚注 — Column(Row, Row, Text) 的混合嵌套结构"},"usageHint":"span"}}}]}}
+{"dataModelUpdate":{"surfaceId":"main_surface","contents":{}}}

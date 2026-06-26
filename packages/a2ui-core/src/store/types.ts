@@ -21,7 +21,7 @@ export type VNode = unknown;
  * 接收 props（来自 JSONLine 协议的 component 数据），返回渲染后的 VNode。
  * 具体渲染逻辑由上层（如 a2ui-react）注入，core 层不依赖具体 UI 框架。
  */
-export type ComponentRenderer = (props: Record<string, any>) => VNode;
+export type ComponentRenderer = (props: Record<string, any>, componentId?: string) => VNode;
 
 /**
  * 组件渲染映射表

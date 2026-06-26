@@ -4,18 +4,14 @@
  * 从 hydrateNodeMap 中组装出组件树结构。
  * 在 parser 解析 A2UI JSONL 协议后调用，返回可直接渲染的组件树。
  *
- * 当前阶段（mock 只有一个组件）：
- *  - 遍历所有已开始渲染的 Surface
- *  - 提取每个 Surface 的 rootNode._vnode（已被 renderMap 渲染）
- *  - 按 Surface 维度组装为 { surfaceId, rootComponent } 列表
- *
- * 后续扩展方向：
- *  - 当 HydrateNode 包含 children 时，递归构建子树
- *  - 处理多 Surface 的层叠/并排布局
+ * 核心职责：
+ *  - 递归解析容器组件（Column/Row/List 等）的 children
+ *  - children.explicitList 中的 componentId → hydrateNodeMap 实例
+ *  - 产出完整、可递归渲染的 VNode 树
  */
 
 import { getStore } from "../store/index.js";
-import type { VNode } from "../store/types.js";
+import type { VNode, HydrateNode } from "../store/types.js";
 
 /**
  * 单个 Surface 的组件树节点
@@ -23,8 +19,65 @@ import type { VNode } from "../store/types.js";
 export interface SurfaceTree {
   /** 所属 Surface ID */
   surfaceId: string;
-  /** 根组件（已渲染的 _vnode） */
+  /** 根组件（已递归解析的 _vnode 树） */
   rootComponent: VNode;
+}
+
+/**
+ * 容器组件的中间表示（由 renderMap 产出，treeBuilder 解析 children）
+ */
+interface ContainerVNode {
+  __a2ui_container: true;
+  type: string;
+  props: Record<string, any>;
+  childIds: string[];
+}
+
+/**
+ * 判断一个 VNode 是否为容器（需要递归解析 children）
+ */
+function isContainer(vnode: unknown): vnode is ContainerVNode {
+  return (
+    typeof vnode === "object" &&
+    vnode !== null &&
+    "__a2ui_container" in (vnode as Record<string, unknown>)
+  );
+}
+
+/**
+ * 递归解析节点及其子树
+ *
+ * - 容器节点：递归解析 childIds → hydrateNodeMap，构建完整的 children 数组
+ * - 叶子节点：直接返回（已是 renderMap 渲染的最终结果）
+ *
+ * @param node      当前 HydrateNode 实例
+ * @param nodeMap   全局 hydrateNodeMap
+ * @returns         完整解析后的 VNode（容器已包含递归解析的 children）
+ */
+export function resolveNode(
+  node: HydrateNode,
+  nodeMap: Record<string, HydrateNode>,
+): VNode {
+  const vnode = node._vnode;
+
+  if (!isContainer(vnode)) {
+    // 叶子节点（如 Text → ReactElement）
+    return vnode;
+  }
+
+  // 容器节点：递归解析 children
+  const resolvedChildren: VNode[] = [];
+  for (const childId of vnode.childIds) {
+    const childNode = nodeMap[childId];
+    if (childNode) {
+      resolvedChildren.push(resolveNode(childNode, nodeMap));
+    }
+  }
+
+  return {
+    ...vnode,
+    children: resolvedChildren,
+  };
 }
 
 /**
@@ -49,7 +102,7 @@ export function buildTree(): SurfaceTree[] {
 
     trees.push({
       surfaceId,
-      rootComponent: surface.rootNode._vnode,
+      rootComponent: resolveNode(surface.rootNode, state.hydrateNodeMap),
     });
   }
 
