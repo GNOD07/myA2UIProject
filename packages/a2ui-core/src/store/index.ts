@@ -11,7 +11,7 @@
  */
 
 import { createStore } from "zustand/vanilla";
-import type { A2UIStore, RenderMap } from "./types";
+import type { A2UIStore, RenderMap, TreeChangeCallback } from "./types";
 import type { Surface, HydrateNode, A2UIError } from "./types";
 
 export type { A2UIStore } from "./types";
@@ -29,11 +29,12 @@ const EMPTY_DATA = {
 /**
  * 创建 store 实例
  */
-function createA2UIStore(renderMap: RenderMap = {}) {
+function createA2UIStore(renderMap: RenderMap = {}, onTreeChange?: TreeChangeCallback) {
   return createStore<A2UIStore>()((set, get) => ({
     // 初始状态
     ...EMPTY_DATA,
     renderMap,
+    onTreeChange,
 
     // ===== Surface CRUD =====
 
@@ -105,6 +106,19 @@ function createA2UIStore(renderMap: RenderMap = {}) {
       set((state) => {
         const { [componentId]: _, ...rest } = state.hydrateNodeMap;
         return { hydrateNodeMap: rest };
+      });
+    },
+
+    markMounted: (componentId: string) => {
+      set((state) => {
+        const existing = state.hydrateNodeMap[componentId];
+        if (!existing || existing.hasMounted) return state;
+        return {
+          hydrateNodeMap: {
+            ...state.hydrateNodeMap,
+            [componentId]: { ...existing, hasMounted: true },
+          },
+        };
       });
     },
 
@@ -193,9 +207,12 @@ let storeInstance: ReturnType<typeof createA2UIStore> | null = null;
  * @param renderMap - 组件渲染映射表，由上层注入（如 a2ui-react 传入 React 渲染函数）
  * 创建单例 store 并返回。若已存在则直接返回现有实例，保证幂等。
  */
-export function initStore(renderMap: RenderMap = {}): ReturnType<typeof createA2UIStore> {
+export function initStore(
+  renderMap: RenderMap = {},
+  onTreeChange?: TreeChangeCallback,
+): ReturnType<typeof createA2UIStore> {
   if (!storeInstance) {
-    storeInstance = createA2UIStore(renderMap);
+    storeInstance = createA2UIStore(renderMap, onTreeChange);
   }
   return storeInstance;
 }

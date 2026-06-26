@@ -56,6 +56,7 @@ export function parseJsonl(raw: string): A2UIMessage[] {
 
 import { getStore } from "../store/index.js";
 import { ErrorType } from "../store/types.js";
+import { buildTree } from "../treeBuilder/index.js";
 
 export function parseMessages(messages: any[]): ParsedResult {
   const result: ParsedResult = {
@@ -83,6 +84,7 @@ export function parseMessages(messages: any[]): ParsedResult {
           ownerSurfaceId: surfaceId,
           protocol: JSON.stringify(message),
           _vnode: component.component,
+          hasMounted: false,
         };
       }
     } else if ('dataModelUpdate' in message) {
@@ -137,6 +139,7 @@ export function processMessage(message: A2UIMessage): void {
         _vnode: renderFn ? renderFn(compProps, component.id) : component.component,
         ownerSurfaceId: surfaceId,
         protocol: JSON.stringify(component),
+        hasMounted: false, // 标记清除初始态：尚未挂载，触发淡入动画
       });
     }
 
@@ -173,6 +176,9 @@ export function processMessage(message: A2UIMessage): void {
   } else if ("deleteSurface" in message) {
     storeState.clearSurface(message.deleteSurface.surfaceId);
   }
+
+  // SDK 驱动：通知外部组件树已变更
+  storeState.onTreeChange?.(buildTree());
 }
 
 export function loadJsonlIntoStore(raw: string): ParsedResult {

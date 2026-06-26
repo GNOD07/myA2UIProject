@@ -3,7 +3,6 @@ import { flushSync } from "react-dom";
 import { Button, Modal, Card, Select, Space, Switch } from "antd";
 import {
   init,
-  buildTree,
   destroyStore,
   A2UIBuffer,
   feedJsonlChunk,
@@ -13,7 +12,7 @@ import simpleTextMock from "../../../packages/a2ui-core/mock/simple-text.json?ra
 import columnMock from "../../../packages/a2ui-core/mock/column-mock.json?raw";
 import nestedColumnMock from "../../../packages/a2ui-core/mock/nested-column-mock.json?raw";
 import nestedColumnJsonlMock from "../../../packages/a2ui-core/mock/nested-column-mock.jsonl?raw";
-import { useStore, defaultRenderMap } from "@a2ui/react";
+import { useStore, defaultRenderMap, FadeIn } from "@a2ui/react";
 import type { SurfaceTree, VNode } from "@a2ui/core";
 
 /** Mock 数据注册表 */
@@ -73,48 +72,52 @@ function VNodeRenderer({ vnode }: { vnode: VNode }) {
 
       if (type === "Column") {
         return (
-          <div
-            id={container.componentId ?? undefined}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent:
-                DISTRIBUTION_CSS[props.distribution] ?? "flex-start",
-              alignItems: ALIGNMENT_CSS[props.alignment] ?? "stretch",
-              gap: 8,
-              padding: 8,
-              border: "1px dashed #d9d9d9",
-              borderRadius: 8,
-            }}
-          >
-            {children.map((child, i) => (
-              <VNodeRenderer key={i} vnode={child} />
-            ))}
-          </div>
+          <FadeIn componentId={container.componentId}>
+            <div
+              id={container.componentId ?? undefined}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent:
+                  DISTRIBUTION_CSS[props.distribution] ?? "flex-start",
+                alignItems: ALIGNMENT_CSS[props.alignment] ?? "stretch",
+                gap: 8,
+                padding: 8,
+                border: "1px dashed #d9d9d9",
+                borderRadius: 8,
+              }}
+            >
+              {children.map((child, i) => (
+                <VNodeRenderer key={i} vnode={child} />
+              ))}
+            </div>
+          </FadeIn>
         );
       }
 
       if (type === "Row") {
         return (
-          <div
-            id={container.componentId ?? undefined}
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent:
-                DISTRIBUTION_CSS[props.distribution] ?? "flex-start",
-              alignItems: ALIGNMENT_CSS[props.alignment] ?? "stretch",
-              gap: 8,
-              padding: 8,
-              border: "1px dashed #bae7ff",
-              borderRadius: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            {children.map((child, i) => (
-              <VNodeRenderer key={i} vnode={child} />
-            ))}
-          </div>
+          <FadeIn componentId={container.componentId}>
+            <div
+              id={container.componentId ?? undefined}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent:
+                  DISTRIBUTION_CSS[props.distribution] ?? "flex-start",
+                alignItems: ALIGNMENT_CSS[props.alignment] ?? "stretch",
+                gap: 8,
+                padding: 8,
+                border: "1px dashed #bae7ff",
+                borderRadius: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              {children.map((child, i) => (
+                <VNodeRenderer key={i} vnode={child} />
+              ))}
+            </div>
+          </FadeIn>
         );
       }
 
@@ -128,7 +131,9 @@ function VNodeRenderer({ vnode }: { vnode: VNode }) {
 
     // ReactElement 检测：$$typeof 是 React 元素的标志位
     if (typeof vnode === "object" && "$$typeof" in vnode) {
-      return vnode as unknown as React.ReactNode;
+      const compId = (vnode as any)?.props?.id as string | undefined;
+      const element = vnode as unknown as React.ReactNode;
+      return compId ? <FadeIn componentId={compId}>{element}</FadeIn> : element;
     }
 
     // 原始 component 格式 { Type: props } → 用 renderMap 动态渲染
@@ -165,13 +170,13 @@ export function App() {
   /** 用于取消正在进行的流式模拟 */
   const abortRef = useRef(false);
 
-  /** 同步批量加载（当前行为）：所有行一次性 buffer 拼包 → buildTree */
+  /** 同步批量加载：init 注入 onTreeChange，SDK 自动通知 */
   const loadMockDataBatch = useCallback((mockKey: string) => {
-    // 取消可能的流式加载
     abortRef.current = true;
 
     destroyStore();
-    init(defaultRenderMap);
+    // SDK 驱动：onTreeChange 在每条消息处理完后自动调用
+    init(defaultRenderMap, (trees) => setTrees(trees));
 
     const rawData = MOCK_REGISTRY[mockKey].data;
     const buffer = new A2UIBuffer();
@@ -184,47 +189,43 @@ export function App() {
     }
     flushJsonlBuffer(buffer);
 
-    setTrees(buildTree());
     setSelectedMock(mockKey);
     setStreaming(false);
     setStreamProgress(null);
   }, []);
 
   /**
-   * 异步流式加载：逐行模拟 LLM 流式推送 JSONL
-   * - 每条消息到达后立即 processMessage → store 增量更新
-   * - 每处理完一行就 buildTree + setTrees，UI 增量渲染
-   * - 每行之间插入 300ms 延迟，模拟网络/LLM 输出节奏
+   * 异步流式加载：逐行模拟 LLM 流式推送 JSONL。
+   * init 注入 onTreeChange → SDK 在每条 processMessage 后自动 push 最新树。
+   * flushSync 确保每条消息独立触发 React 渲染（打破 async 批处理）。
    */
   const loadMockDataStream = useCallback(async (mockKey: string) => {
     abortRef.current = false;
 
     destroyStore();
-    init(defaultRenderMap);
 
     const rawData = MOCK_REGISTRY[mockKey].data;
     const buffer = new A2UIBuffer();
     const lines = rawData.split(/\r?\n/).filter((line) => line.trim());
 
+    let processedCount = 0;
+
+    // SDK 驱动：onTreeChange 在每条 processMessage 后自动调用
+    init(defaultRenderMap, (trees) => {
+      processedCount++;
+      flushSync(() => {
+        setTrees(trees);
+        setStreamProgress(`${processedCount}/${lines.length}`);
+      });
+    });
+
     setSelectedMock(mockKey);
     setStreaming(true);
     setTrees([]);
 
-    let processedCount = 0;
-
-    const opts = {
-      onMessage: () => {
-        processedCount++;
-        flushSync(() => {
-          setTrees(buildTree());
-          setStreamProgress(`${processedCount}/${lines.length}`);
-        });
-      },
-    };
-
     for (let i = 0; i < lines.length; i++) {
       if (abortRef.current) {
-        flushJsonlBuffer(buffer, opts);
+        flushJsonlBuffer(buffer);
         setStreaming(false);
         setStreamProgress(null);
         return;
@@ -232,13 +233,13 @@ export function App() {
 
       const line = lines[i];
       const mid = Math.floor(line.length / 2);
-      feedJsonlChunk(line.slice(0, mid), buffer, opts);
-      feedJsonlChunk(line.slice(mid) + "\n", buffer, opts);
+      feedJsonlChunk(line.slice(0, mid), buffer);
+      feedJsonlChunk(line.slice(mid) + "\n", buffer);
 
       await new Promise((r) => setTimeout(r, 300));
     }
 
-    flushJsonlBuffer(buffer, opts);
+    flushJsonlBuffer(buffer);
     setStreaming(false);
     setStreamProgress(null);
   }, []);

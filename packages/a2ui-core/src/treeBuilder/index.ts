@@ -11,17 +11,7 @@
  */
 
 import { getStore } from "../store/index.js";
-import type { VNode, HydrateNode } from "../store/types.js";
-
-/**
- * 单个 Surface 的组件树节点
- */
-export interface SurfaceTree {
-  /** 所属 Surface ID */
-  surfaceId: string;
-  /** 根组件（已递归解析的 _vnode 树） */
-  rootComponent: VNode;
-}
+import type { VNode, HydrateNode, SurfaceTree } from "../store/types.js";
 
 /**
  * 容器组件的中间表示（由 renderMap 产出，treeBuilder 解析 children）

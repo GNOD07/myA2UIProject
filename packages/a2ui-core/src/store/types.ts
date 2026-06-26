@@ -17,6 +17,24 @@
 export type VNode = unknown;
 
 /**
+ * 单个 Surface 的组件树节点
+ * 由 buildTree() 产出，供外部渲染器消费。
+ * 放在 store/types 避免 treeBuilder ↔ store 循环依赖。
+ */
+export interface SurfaceTree {
+  /** 所属 Surface ID */
+  surfaceId: string;
+  /** 根组件（已递归解析的 _vnode 树） */
+  rootComponent: VNode;
+}
+
+/**
+ * 组件树变更回调
+ * 由 init(renderMap, onTreeChange) 注入，SDK 在每次 processMessage 后自动调用。
+ */
+export type TreeChangeCallback = (trees: SurfaceTree[]) => void;
+
+/**
  * 组件渲染函数
  * 接收 props（来自 JSONLine 协议的 component 数据），返回渲染后的 VNode。
  * 具体渲染逻辑由上层（如 a2ui-react）注入，core 层不依赖具体 UI 框架。
@@ -84,6 +102,11 @@ export interface HydrateNode {
   ownerSurfaceId: string;
   /** 原始 JSONLine 协议字符串 */
   protocol: string;
+  /**
+   * 标记清除：组件首次渲染后，由动画结束回调设为 true。
+   * stream 流式到达的新组件 hasMounted=false → 触发淡入动画。
+   */
+  hasMounted: boolean;
 }
 
 /**
@@ -98,6 +121,12 @@ export interface A2UIStoreState {
   errorMap: Record<string, A2UIError>;
   /** 组件渲染映射表：组件类型 -> 渲染函数，由 init(renderMap) 注入 */
   renderMap: RenderMap;
+  /**
+   * 组件树变更回调。SDK 在每次 processMessage 后自动调用，
+   * 传入 buildTree() 产出的最新 SurfaceTree[]。
+   * 由 init(renderMap, onTreeChange) 注入。
+   */
+  onTreeChange?: TreeChangeCallback;
 }
 
 /**
@@ -123,6 +152,8 @@ export interface A2UIStoreActions {
   updateHydrateNode: (componentId: string, updates: Partial<Omit<HydrateNode, "componentId">>) => void;
   /** 删除水合节点 */
   removeHydrateNode: (componentId: string) => void;
+  /** 标记组件已挂载（动画结束回调），hasMounted → true */
+  markMounted: (componentId: string) => void;
 
   // ===== Error CRUD =====
   /** 添加错误 */
