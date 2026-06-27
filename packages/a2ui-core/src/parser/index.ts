@@ -192,3 +192,73 @@ export function loadJsonlIntoStore(raw: string): ParsedResult {
   // 返回 ParsedResult 保持向后兼容
   return parseMessages(messages);
 }
+
+// ============================================================
+// StreamProcessor — 集成缓冲区的流式解析器
+// ============================================================
+
+import { AutoCompleteBuffer } from "../buffer/index.js";
+
+/**
+ * 每次成功处理一条消息后的回调
+ */
+export type MessageCallback = (message: A2UIMessage) => void;
+
+/**
+ * 流式处理器：将缓冲区集成到 processMessage 调用链中。
+ *
+ * 用法：
+ * ```
+ * const sp = new StreamProcessor();
+ * sp.feed('{"surfaceUpdate":{"surfa');   // 不完整 → 暂存
+ * sp.feed('ceId":"s1","components":[...  // 拼出完整 JSON → processMessage
+ * sp.flush();                              // 冲刷残留
+ * ```
+ */
+export class StreamProcessor {
+  private _buffer = new AutoCompleteBuffer();
+
+  /**
+   * @param onMessage - 每条消息处理完后的回调（可选）
+   */
+  constructor(private _onMessage?: MessageCallback) {}
+
+  /** 喂入一个原始文本 chunk，内部自动缓冲、补全、解析、处理 */
+  feed(chunk: string): void {
+    const jsonStrings = this._buffer.feed(chunk);
+    for (const raw of jsonStrings) {
+      this._processOne(raw);
+    }
+  }
+
+  /** 冲刷缓冲区残留 */
+  flush(): void {
+    const jsonStrings = this._buffer.flush();
+    for (const raw of jsonStrings) {
+      this._processOne(raw);
+    }
+  }
+
+  /** 清空缓冲区（丢弃所有未处理数据） */
+  reset(): void {
+    this._buffer.reset();
+  }
+
+  private _processOne(raw: string): void {
+    let message: A2UIMessage;
+    try {
+      message = JSON.parse(raw) as A2UIMessage;
+    } catch (e) {
+      const storeState = getStore().getState();
+      storeState.addError({
+        id: `stream_parse_error-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        type: ErrorType.PARSE_ERROR,
+        content: `StreamProcessor: failed to parse JSON. ${(e as Error).message}. Raw: ${raw.slice(0, 100)}`,
+      });
+      return;
+    }
+
+    processMessage(message);
+    this._onMessage?.(message);
+  }
+}

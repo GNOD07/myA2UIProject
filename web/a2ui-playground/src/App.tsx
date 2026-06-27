@@ -7,6 +7,7 @@ import {
   A2UIBuffer,
   feedJsonlChunk,
   flushJsonlBuffer,
+  StreamProcessor,
 } from "@a2ui/core";
 import simpleTextMock from "../../../packages/a2ui-core/mock/simple-text.json?raw";
 import columnMock from "../../../packages/a2ui-core/mock/column-mock.json?raw";
@@ -14,6 +15,9 @@ import nestedColumnMock from "../../../packages/a2ui-core/mock/nested-column-moc
 import nestedColumnJsonlMock from "../../../packages/a2ui-core/mock/nested-column-mock.jsonl?raw";
 import { useStore, defaultRenderMap, FadeIn } from "@a2ui/react";
 import type { SurfaceTree, VNode } from "@a2ui/core";
+
+/** 去掉换行的原始 JSON 流（模拟 LLM 逐 token 输出，无 \n 分隔） */
+const RAW_NESTED_STREAM = nestedColumnMock.replace(/\r?\n/g, '');
 
 /** Mock 数据注册表 */
 const MOCK_REGISTRY: Record<string, { label: string; data: string }> = {
@@ -26,6 +30,10 @@ const MOCK_REGISTRY: Record<string, { label: string; data: string }> = {
   "nested-column-jsonl": {
     label: "Nested Column JSONL — 单组件/消息流式",
     data: nestedColumnJsonlMock,
+  },
+  "nested-raw-stream": {
+    label: "Nested Raw Stream — 50ms/50char 原始流",
+    data: RAW_NESTED_STREAM,
   },
 };
 
@@ -195,13 +203,10 @@ export function App() {
   }, []);
 
   /**
-   * 异步流式加载：逐行模拟 LLM 流式推送 JSONL。
-   * init 注入 onTreeChange → SDK 在每条 processMessage 后自动 push 最新树。
-   * flushSync 确保每条消息独立触发 React 渲染（打破 async 批处理）。
+   * 流式加载（JSONL 模式）：逐行模拟 LLM 流式推送 JSONL。
    */
   const loadMockDataStream = useCallback(async (mockKey: string) => {
     abortRef.current = false;
-
     destroyStore();
 
     const rawData = MOCK_REGISTRY[mockKey].data;
@@ -209,14 +214,9 @@ export function App() {
     const lines = rawData.split(/\r?\n/).filter((line) => line.trim());
 
     let processedCount = 0;
-
-    // SDK 驱动：onTreeChange 在每条 processMessage 后自动调用
     init(defaultRenderMap, (trees) => {
       processedCount++;
-      flushSync(() => {
-        setTrees(trees);
-        setStreamProgress(`${processedCount}/${lines.length}`);
-      });
+      flushSync(() => { setTrees(trees); setStreamProgress(`${processedCount}/${lines.length}`); });
     });
 
     setSelectedMock(mockKey);
@@ -230,30 +230,77 @@ export function App() {
         setStreamProgress(null);
         return;
       }
-
       const line = lines[i];
       const mid = Math.floor(line.length / 2);
       feedJsonlChunk(line.slice(0, mid), buffer);
       feedJsonlChunk(line.slice(mid) + "\n", buffer);
-
       await new Promise((r) => setTimeout(r, 300));
     }
-
     flushJsonlBuffer(buffer);
     setStreaming(false);
     setStreamProgress(null);
   }, []);
 
-  /** 根据 streamMode 选择加载方式 */
+  /**
+   * 原始 JSON Stream 加载：模拟 LLM 逐 token 输出原始 JSON（无 \n）。
+   * 50ms 推送 50 字符 → StreamBuffer 括号计数提取完整 JSON →
+   * splitSurfaceUpdate 拆单组件 → processMessage。
+   */
+  const loadMockDataRawStream = useCallback(async (mockKey: string) => {
+    abortRef.current = false;
+    destroyStore();
+
+    const rawData = MOCK_REGISTRY[mockKey].data;
+    const estimatedMessages = 22;
+    let processedCount = 0;
+
+    init(defaultRenderMap, (trees) => {
+      processedCount++;
+      flushSync(() => { setTrees(trees); setStreamProgress(`${processedCount}/${estimatedMessages}`); });
+    });
+
+    setSelectedMock(mockKey);
+    setStreaming(true);
+    setTrees([]);
+
+    // StreamProcessor 内部集成 AutoCompleteBuffer + processMessage
+    const sp = new StreamProcessor();
+
+    const CHUNK_SIZE = 50;
+    const INTERVAL_MS = 50;
+    let ptr = 0;
+    while (ptr < rawData.length) {
+      if (abortRef.current) {
+        sp.flush();
+        setStreaming(false);
+        setStreamProgress(null);
+        return;
+      }
+      const chunk = rawData.slice(ptr, ptr + CHUNK_SIZE);
+      ptr += CHUNK_SIZE;
+      sp.feed(chunk);
+      await new Promise((r) => setTimeout(r, INTERVAL_MS));
+    }
+
+    sp.flush();
+    setStreaming(false);
+    setStreamProgress(null);
+  }, []);
+
+  /** 根据 streamMode 和 mock 类型选择加载方式 */
   const loadMockData = useCallback(
     (mockKey: string) => {
       if (streamMode) {
-        loadMockDataStream(mockKey);
+        if (mockKey === 'nested-raw-stream') {
+          loadMockDataRawStream(mockKey);
+        } else {
+          loadMockDataStream(mockKey);
+        }
       } else {
         loadMockDataBatch(mockKey);
       }
     },
-    [streamMode, loadMockDataBatch, loadMockDataStream],
+    [streamMode, loadMockDataBatch, loadMockDataStream, loadMockDataRawStream],
   );
 
   // 初始化加载默认 mock
@@ -303,8 +350,7 @@ export function App() {
             onChange={(checked) => {
               setStreamMode(checked);
               if (checked) {
-                // 切换到流式模式时立即重新加载
-                loadMockDataStream(selectedMock);
+                loadMockData(selectedMock);
               } else {
                 abortRef.current = true;
                 loadMockDataBatch(selectedMock);

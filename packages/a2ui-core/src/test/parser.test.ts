@@ -11,8 +11,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, before, beforeEach } from 'mocha';
 import { expect } from 'chai';
-import { parseMessages, parseJsonl, loadJsonlIntoStore } from '../parser/index.js';
+import { parseMessages, parseJsonl, loadJsonlIntoStore, StreamProcessor } from '../parser/index.js';
 import { initStore, getStore, destroyStore } from '../store/index.js';
+import { buildTree } from '../treeBuilder/index.js';
 import type { RenderMap } from '../store/types.js';
 
 /**
