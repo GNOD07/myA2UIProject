@@ -4,20 +4,16 @@ import { Button, Modal, Card, Select, Space, Switch } from "antd";
 import {
   init,
   destroyStore,
-  A2UIBuffer,
-  feedJsonlChunk,
-  flushJsonlBuffer,
   StreamProcessor,
 } from "@a2ui/core";
 import simpleTextMock from "../../../packages/a2ui-core/mock/simple-text.json?raw";
 import columnMock from "../../../packages/a2ui-core/mock/column-mock.json?raw";
 import nestedColumnMock from "../../../packages/a2ui-core/mock/nested-column-mock.json?raw";
 import nestedColumnJsonlMock from "../../../packages/a2ui-core/mock/nested-column-mock.jsonl?raw";
+import buttonMock from "../../../packages/a2ui-core/mock/button-mock.json?raw";
+import imageMock from "../../../packages/a2ui-core/mock/image-mock.json?raw";
 import { useStore, defaultRenderMap, FadeIn } from "@a2ui/react";
 import type { SurfaceTree, VNode } from "@a2ui/core";
-
-/** 去掉换行的原始 JSON 流（模拟 LLM 逐 token 输出，无 \n 分隔） */
-const RAW_NESTED_STREAM = nestedColumnMock.replace(/\r?\n/g, '');
 
 /** Mock 数据注册表 */
 const MOCK_REGISTRY: Record<string, { label: string; data: string }> = {
@@ -31,9 +27,13 @@ const MOCK_REGISTRY: Record<string, { label: string; data: string }> = {
     label: "Nested Column JSONL — 单组件/消息流式",
     data: nestedColumnJsonlMock,
   },
-  "nested-raw-stream": {
-    label: "Nested Raw Stream — 50ms/50char 原始流",
-    data: RAW_NESTED_STREAM,
+  "button-demo": {
+    label: "Button Demo — primary / default / action",
+    data: buttonMock,
+  },
+  "image-demo": {
+    label: "Image Demo — icon / avatar / feature / header",
+    data: imageMock,
   },
 };
 
@@ -129,6 +129,37 @@ function VNodeRenderer({ vnode }: { vnode: VNode }) {
         );
       }
 
+      if (type === "Button") {
+        const { primary, action } = props;
+        return (
+          <FadeIn componentId={container.componentId}>
+            <button
+              id={container.componentId ?? undefined}
+              onClick={() => {
+                console.log("[A2UI Button] action:", action?.name, action?.context);
+              }}
+              style={{
+                padding: "8px 20px",
+                borderRadius: 6,
+                border: primary ? "none" : "1px solid #d9d9d9",
+                backgroundColor: primary ? "#1677ff" : "#fff",
+                color: primary ? "#fff" : "#333",
+                fontSize: 14,
+                fontWeight: primary ? 600 : 400,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              {children.map((child, i) => (
+                <VNodeRenderer key={i} vnode={child} />
+              ))}
+            </button>
+          </FadeIn>
+        );
+      }
+
       // 未知容器类型：展示 JSON
       return (
         <pre style={{ fontSize: 12, color: "#999" }}>
@@ -178,94 +209,46 @@ export function App() {
   /** 用于取消正在进行的流式模拟 */
   const abortRef = useRef(false);
 
-  /** 同步批量加载：init 注入 onTreeChange，SDK 自动通知 */
+  /** 批量加载：Stream OFF，完整数据直接喂入，不切割 */
   const loadMockDataBatch = useCallback((mockKey: string) => {
     abortRef.current = true;
-
     destroyStore();
-    // SDK 驱动：onTreeChange 在每条消息处理完后自动调用
     init(defaultRenderMap, (trees) => setTrees(trees));
 
     const rawData = MOCK_REGISTRY[mockKey].data;
-    const buffer = new A2UIBuffer();
-
-    const lines = rawData.split(/\r?\n/).filter((line) => line.trim());
-    for (const line of lines) {
-      const mid = Math.floor(line.length / 2);
-      feedJsonlChunk(line.slice(0, mid), buffer);
-      feedJsonlChunk(line.slice(mid) + "\n", buffer);
-    }
-    flushJsonlBuffer(buffer);
+    const sp = new StreamProcessor();
+    sp.feed(rawData);
+    sp.flush();
 
     setSelectedMock(mockKey);
     setStreaming(false);
     setStreamProgress(null);
   }, []);
 
-  /**
-   * 流式加载（JSONL 模式）：逐行模拟 LLM 流式推送 JSONL。
-   */
+  /** 统一的流式加载：Stream ON 时使用。StreamProcessor 内部自动处理 JSONL 和原始流 */
   const loadMockDataStream = useCallback(async (mockKey: string) => {
     abortRef.current = false;
     destroyStore();
 
     const rawData = MOCK_REGISTRY[mockKey].data;
-    const buffer = new A2UIBuffer();
-    const lines = rawData.split(/\r?\n/).filter((line) => line.trim());
+    // 根据内容自动估算消息数量（每个 {" 模式的 JSON 对象算一条）
+    const estimatedTotal = (rawData.match(/\{"(surfaceUpdate|beginRendering|dataModelUpdate|deleteSurface)"/g) || []).length;
 
     let processedCount = 0;
     init(defaultRenderMap, (trees) => {
       processedCount++;
-      flushSync(() => { setTrees(trees); setStreamProgress(`${processedCount}/${lines.length}`); });
+      flushSync(() => {
+        setTrees(trees);
+        setStreamProgress(estimatedTotal ? `${processedCount}/${estimatedTotal}` : `${processedCount}`);
+      });
     });
 
     setSelectedMock(mockKey);
     setStreaming(true);
     setTrees([]);
 
-    for (let i = 0; i < lines.length; i++) {
-      if (abortRef.current) {
-        flushJsonlBuffer(buffer);
-        setStreaming(false);
-        setStreamProgress(null);
-        return;
-      }
-      const line = lines[i];
-      const mid = Math.floor(line.length / 2);
-      feedJsonlChunk(line.slice(0, mid), buffer);
-      feedJsonlChunk(line.slice(mid) + "\n", buffer);
-      await new Promise((r) => setTimeout(r, 300));
-    }
-    flushJsonlBuffer(buffer);
-    setStreaming(false);
-    setStreamProgress(null);
-  }, []);
-
-  /**
-   * 原始 JSON Stream 加载：模拟 LLM 逐 token 输出原始 JSON（无 \n）。
-   * 50ms 推送 50 字符 → StreamBuffer 括号计数提取完整 JSON →
-   * splitSurfaceUpdate 拆单组件 → processMessage。
-   */
-  const loadMockDataRawStream = useCallback(async (mockKey: string) => {
-    abortRef.current = false;
-    destroyStore();
-
-    const rawData = MOCK_REGISTRY[mockKey].data;
-    const estimatedMessages = 22;
-    let processedCount = 0;
-
-    init(defaultRenderMap, (trees) => {
-      processedCount++;
-      flushSync(() => { setTrees(trees); setStreamProgress(`${processedCount}/${estimatedMessages}`); });
-    });
-
-    setSelectedMock(mockKey);
-    setStreaming(true);
-    setTrees([]);
-
-    // StreamProcessor 内部集成 AutoCompleteBuffer + processMessage
+    // StreamProcessor 统一处理：JSONL（\n 分隔）或原始流（无分隔符）
     const sp = new StreamProcessor();
-
     const CHUNK_SIZE = 50;
     const INTERVAL_MS = 50;
     let ptr = 0;
@@ -287,20 +270,12 @@ export function App() {
     setStreamProgress(null);
   }, []);
 
-  /** 根据 streamMode 和 mock 类型选择加载方式 */
+  /** Stream 开关控制：ON → 流式，OFF → 批量 */
   const loadMockData = useCallback(
     (mockKey: string) => {
-      if (streamMode) {
-        if (mockKey === 'nested-raw-stream') {
-          loadMockDataRawStream(mockKey);
-        } else {
-          loadMockDataStream(mockKey);
-        }
-      } else {
-        loadMockDataBatch(mockKey);
-      }
+      streamMode ? loadMockDataStream(mockKey) : loadMockDataBatch(mockKey);
     },
-    [streamMode, loadMockDataBatch, loadMockDataStream, loadMockDataRawStream],
+    [streamMode, loadMockDataBatch, loadMockDataStream],
   );
 
   // 初始化加载默认 mock

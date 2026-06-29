@@ -81,4 +81,72 @@ export const defaultRenderMap: RenderMap = {
       childIds,
     };
   },
+
+  /**
+   * Button 组件渲染
+   *
+   * 协议格式（standard_catalog_definition.json）：
+   * {
+   *   "child": "text_id",           // 子组件 ID（通常为 Text）
+   *   "primary": true,              // 可选，是否主按钮样式
+   *   "action": {
+   *     "name": "submit_form",      // 动作名
+   *     "context": [                // 可选，上下文键值对
+   *       { "key": "formId", "value": { "literalString": "f1" } }
+   *     ]
+   *   }
+   * }
+   */
+  Button: (props: Record<string, any>, componentId?: string) => {
+    const { child, primary = false, action } = props;
+    return {
+      __a2ui_container: true,
+      type: "Button",
+      props: { primary, action },
+      componentId,
+      childIds: child ? [child] : [],
+    };
+  },
+
+  /**
+   * Image 组件渲染（叶子组件，无子节点）
+   *
+   * 协议格式（standard_catalog_definition.json）：
+   * {
+   *   "url": { "literalString": "https://..." } | { "path": "/data/url" },
+   *   "fit": "contain" | "cover" | "fill" | "none" | "scale-down",  // 可选
+   *   "usageHint": "icon" | "avatar" | "smallFeature" | ...         // 可选
+   * }
+   */
+  Image: (props: Record<string, any>, componentId?: string) => {
+    const { url, fit = "cover", usageHint } = props;
+    const src = url?.literalString ?? url?.path ?? "";
+
+    // usageHint → 尺寸/样式映射
+    const hintStyles: Record<string, Record<string, any>> = {
+      icon: { width: 40, height: 40 },
+      avatar: { width: 48, height: 48, borderRadius: "50%" },
+      smallFeature: { width: 180, height: 120 },
+      mediumFeature: { width: 320, height: 200 },
+      largeFeature: { width: 480, height: 320 },
+      header: { width: "100%", height: 200 },
+    };
+
+    const baseStyle: Record<string, any> = {
+      display: "block",
+      objectFit: fit,
+      borderRadius: 8,
+    };
+
+    return React.createElement("img", {
+      id: componentId ?? undefined,
+      key: `image-${componentId ?? src.slice(0, 20)}`,
+      src,
+      alt: usageHint ?? "image",
+      style: {
+        ...baseStyle,
+        ...(usageHint ? hintStyles[usageHint] ?? {} : {}),
+      },
+    });
+  },
 };
