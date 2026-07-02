@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { flushSync } from "react-dom";
 import { Button, Modal, Card, Select, Space, Switch } from "antd";
 import {
@@ -12,8 +12,13 @@ import nestedColumnMock from "../../../packages/a2ui-core/mock/nested-column-moc
 import nestedColumnJsonlMock from "../../../packages/a2ui-core/mock/nested-column-mock.jsonl?raw";
 import buttonMock from "../../../packages/a2ui-core/mock/button-mock.json?raw";
 import imageMock from "../../../packages/a2ui-core/mock/image-mock.json?raw";
-import { useStore, defaultRenderMap, FadeIn } from "@a2ui/react";
-import type { SurfaceTree, VNode } from "@a2ui/core";
+import iconMock from "../../../packages/a2ui-core/mock/icon-mock.json?raw";
+import videoMock from "../../../packages/a2ui-core/mock/video-mock.json?raw";
+import cardMock from "../../../packages/a2ui-core/mock/card-mock.json?raw";
+import dataBindingMock from "../../../packages/a2ui-core/mock/data-binding-mock.json?raw";
+import listMock from "../../../packages/a2ui-core/mock/list-mock.json?raw";
+import { useStore, defaultRenderMap, A2UIRenderer } from "@a2ui/react";
+import type { SurfaceTree } from "@a2ui/core";
 
 /** Mock 数据注册表 */
 const MOCK_REGISTRY: Record<string, { label: string; data: string }> = {
@@ -35,167 +40,27 @@ const MOCK_REGISTRY: Record<string, { label: string; data: string }> = {
     label: "Image Demo — icon / avatar / feature / header",
     data: imageMock,
   },
+  "icon-demo": {
+    label: "Icon Demo — 12 种 Material 图标",
+    data: iconMock,
+  },
+  "video-demo": {
+    label: "Video Demo — 视频播放器",
+    data: videoMock,
+  },
+  "card-demo": {
+    label: "Card Demo — 卡片容器 + 嵌套内容",
+    data: cardMock,
+  },
+  "data-binding": {
+    label: "Data Binding — 数据绑定 / path / 简写 / 模板列表",
+    data: dataBindingMock,
+  },
+  "list-demo": {
+    label: "List Demo — List 组件 / template 动态列表",
+    data: listMock,
+  },
 };
-
-/**
- * 将 _vnode 安全渲染为 React 节点
- *
- * _vnode 有两种形态：
- * 1. ReactElement — renderMap 已渲染的结果，直接使用
- * 2. 原始 component 对象 { Type: props } — 用 renderMap 动态渲染或 JSON 展示
- */
-/** CSS justify-content 映射（distribution → flex） */
-const DISTRIBUTION_CSS: Record<string, string> = {
-  start: "flex-start",
-  center: "center",
-  end: "flex-end",
-  spaceBetween: "space-between",
-  spaceAround: "space-around",
-  spaceEvenly: "space-evenly",
-};
-
-/** CSS align-items 映射（alignment → flex） */
-const ALIGNMENT_CSS: Record<string, string> = {
-  start: "flex-start",
-  center: "center",
-  end: "flex-end",
-  stretch: "stretch",
-};
-
-function VNodeRenderer({ vnode }: { vnode: VNode }) {
-  const renderMap = useStore((s) => s.renderMap);
-
-  return useMemo(() => {
-    if (vnode === null || vnode === undefined) return null;
-    if (typeof vnode === "string" || typeof vnode === "number") return vnode as React.ReactNode;
-
-    // === 容器组件（treeBuilder 已解析 children） ===
-    if (
-      typeof vnode === "object" &&
-      "__a2ui_container" in (vnode as Record<string, unknown>)
-    ) {
-      const container = vnode as Record<string, any>;
-      const { type, props } = container;
-      const children: unknown[] = container.children ?? [];
-
-      if (type === "Column") {
-        return (
-          <FadeIn componentId={container.componentId}>
-            <div
-              id={container.componentId ?? undefined}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent:
-                  DISTRIBUTION_CSS[props.distribution] ?? "flex-start",
-                alignItems: ALIGNMENT_CSS[props.alignment] ?? "stretch",
-                gap: 8,
-                padding: 8,
-                border: "1px dashed #d9d9d9",
-                borderRadius: 8,
-              }}
-            >
-              {children.map((child, i) => (
-                <VNodeRenderer key={i} vnode={child} />
-              ))}
-            </div>
-          </FadeIn>
-        );
-      }
-
-      if (type === "Row") {
-        return (
-          <FadeIn componentId={container.componentId}>
-            <div
-              id={container.componentId ?? undefined}
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent:
-                  DISTRIBUTION_CSS[props.distribution] ?? "flex-start",
-                alignItems: ALIGNMENT_CSS[props.alignment] ?? "stretch",
-                gap: 8,
-                padding: 8,
-                border: "1px dashed #bae7ff",
-                borderRadius: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              {children.map((child, i) => (
-                <VNodeRenderer key={i} vnode={child} />
-              ))}
-            </div>
-          </FadeIn>
-        );
-      }
-
-      if (type === "Button") {
-        const { primary, action } = props;
-        return (
-          <FadeIn componentId={container.componentId}>
-            <button
-              id={container.componentId ?? undefined}
-              onClick={() => {
-                console.log("[A2UI Button] action:", action?.name, action?.context);
-              }}
-              style={{
-                padding: "8px 20px",
-                borderRadius: 6,
-                border: primary ? "none" : "1px solid #d9d9d9",
-                backgroundColor: primary ? "#1677ff" : "#fff",
-                color: primary ? "#fff" : "#333",
-                fontSize: 14,
-                fontWeight: primary ? 600 : 400,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              {children.map((child, i) => (
-                <VNodeRenderer key={i} vnode={child} />
-              ))}
-            </button>
-          </FadeIn>
-        );
-      }
-
-      // 未知容器类型：展示 JSON
-      return (
-        <pre style={{ fontSize: 12, color: "#999" }}>
-          {JSON.stringify(vnode, null, 2)}
-        </pre>
-      );
-    }
-
-    // ReactElement 检测：$$typeof 是 React 元素的标志位
-    if (typeof vnode === "object" && "$$typeof" in vnode) {
-      const compId = (vnode as any)?.props?.id as string | undefined;
-      const element = vnode as unknown as React.ReactNode;
-      return compId ? <FadeIn componentId={compId}>{element}</FadeIn> : element;
-    }
-
-    // 原始 component 格式 { Type: props } → 用 renderMap 动态渲染
-    if (typeof vnode === "object" && vnode !== null) {
-      const keys = Object.keys(vnode);
-      if (keys.length === 1) {
-        const compType = keys[0];
-        const compProps = (vnode as Record<string, any>)[compType];
-        const renderFn = renderMap[compType];
-        if (renderFn) {
-          return renderFn(compProps) as React.ReactNode;
-        }
-      }
-    }
-
-    // 兜底：JSON 展示
-    return (
-      <pre style={{ fontSize: 12, color: "#999" }}>
-        {JSON.stringify(vnode, null, 2)}
-      </pre>
-    );
-  }, [vnode, renderMap]);
-}
 
 export function App() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -209,7 +74,7 @@ export function App() {
   /** 用于取消正在进行的流式模拟 */
   const abortRef = useRef(false);
 
-  /** 批量加载：Stream OFF，完整数据直接喂入，不切割 */
+  /** 批量加载：Stream OFF，完整数据直接喂入 */
   const loadMockDataBatch = useCallback((mockKey: string) => {
     abortRef.current = true;
     destroyStore();
@@ -225,13 +90,12 @@ export function App() {
     setStreamProgress(null);
   }, []);
 
-  /** 统一的流式加载：Stream ON 时使用。StreamProcessor 内部自动处理 JSONL 和原始流 */
+  /** 流式加载：Stream ON，模拟逐 chunk 推送 */
   const loadMockDataStream = useCallback(async (mockKey: string) => {
     abortRef.current = false;
     destroyStore();
 
     const rawData = MOCK_REGISTRY[mockKey].data;
-    // 根据内容自动估算消息数量（每个 {" 模式的 JSON 对象算一条）
     const estimatedTotal = (rawData.match(/\{"(surfaceUpdate|beginRendering|dataModelUpdate|deleteSurface)"/g) || []).length;
 
     let processedCount = 0;
@@ -247,7 +111,6 @@ export function App() {
     setStreaming(true);
     setTrees([]);
 
-    // StreamProcessor 统一处理：JSONL（\n 分隔）或原始流（无分隔符）
     const sp = new StreamProcessor();
     const CHUNK_SIZE = 50;
     const INTERVAL_MS = 50;
@@ -270,7 +133,7 @@ export function App() {
     setStreamProgress(null);
   }, []);
 
-  /** Stream 开关控制：ON → 流式，OFF → 批量 */
+  /** Stream 开关控制 */
   const loadMockData = useCallback(
     (mockKey: string) => {
       streamMode ? loadMockDataStream(mockKey) : loadMockDataBatch(mockKey);
@@ -284,15 +147,17 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Store 数据订阅
+  // Store 数据订阅（调试面板用）
   const surfaceMap = useStore((state) => state.surfaceMap);
   const hydrateNodeMap = useStore((state) => state.hydrateNodeMap);
   const errorMap = useStore((state) => state.errorMap);
+  const dataModelMap = useStore((state) => state.dataModelMap);
   const renderMapKeys = useStore((state) => Object.keys(state.renderMap));
 
   const storeSnapshot = {
     surfaceMap,
     hydrateNodeMap,
+    dataModelMap,
     errorMap,
     renderMap: renderMapKeys,
   };
@@ -397,7 +262,7 @@ export function App() {
               <div style={{ fontSize: 12, color: "#999", marginBottom: 8 }}>
                 Surface: {tree.surfaceId}
               </div>
-              <VNodeRenderer vnode={tree.rootComponent} />
+              <A2UIRenderer vnode={tree.rootComponent} />
             </div>
           ))
         )}
@@ -414,7 +279,6 @@ export function App() {
         ]}
         width={900}
       >
-        {/* 顶部统计摘要 */}
         <div
           style={{
             display: "flex",
@@ -424,26 +288,11 @@ export function App() {
           }}
         >
           {[
-            {
-              label: "组件总数",
-              value: Object.keys(hydrateNodeMap).length,
-              color: "#1677ff",
-            },
-            {
-              label: "Surface",
-              value: Object.keys(surfaceMap).length,
-              color: "#52c41a",
-            },
-            {
-              label: "已注册渲染器",
-              value: renderMapKeys.length,
-              color: "#722ed1",
-            },
-            {
-              label: "错误",
-              value: Object.keys(errorMap).length,
-              color: "#ff4d4f",
-            },
+            { label: "组件总数", value: Object.keys(hydrateNodeMap).length, color: "#1677ff" },
+            { label: "Surface", value: Object.keys(surfaceMap).length, color: "#52c41a" },
+            { label: "数据模型", value: Object.keys(dataModelMap).length, color: "#fa8c16" },
+            { label: "已注册渲染器", value: renderMapKeys.length, color: "#722ed1" },
+            { label: "错误", value: Object.keys(errorMap).length, color: "#ff4d4f" },
           ].map((item) => (
             <div
               key={item.label}

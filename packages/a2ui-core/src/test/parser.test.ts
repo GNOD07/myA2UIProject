@@ -338,3 +338,278 @@ describe('parser - loadJsonlIntoStore with renderMap', () => {
     });
   });
 });
+
+// ============================================================================
+// dataModelUpdate 处理测试
+// ============================================================================
+
+describe('parser - dataModelUpdate processing', () => {
+  beforeEach(() => {
+    destroyStore();
+  });
+
+  it('dataModelUpdate 扁平数据写入 dataModelMap', () => {
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+    };
+
+    initStore(renderMap);
+    const raw = [
+      '{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"t1","component":{"Text":{"text":{"literalString":"Hi"}}}}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s1","contents":[{"key":"name","valueString":"Bob"},{"key":"age","valueNumber":25}]}}',
+      '{"beginRendering":{"surfaceId":"s1","root":"t1"}}',
+    ].join('\n');
+    loadJsonlIntoStore(raw);
+
+    const state = getStore().getState();
+    const model = state.getDataModel('s1');
+    expect(model).to.deep.equal({ name: 'Bob', age: 25 });
+  });
+
+  it('dataModelUpdate + path 分层构建嵌套数据模型', () => {
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+    };
+
+    initStore(renderMap);
+    const raw = [
+      '{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"t1","component":{"Text":{"text":{"literalString":"Hi"}}}}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s1","contents":[{"key":"user","valueMap":[{"key":"name","valueString":"Alice"}]}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s1","path":"/user/address","contents":[{"key":"city","valueString":"Beijing"}]}}',
+      '{"beginRendering":{"surfaceId":"s1","root":"t1"}}',
+    ].join('\n');
+    loadJsonlIntoStore(raw);
+
+    const state = getStore().getState();
+    const model = state.getDataModel('s1');
+    expect(model).to.deep.equal({
+      user: { name: 'Alice', address: { city: 'Beijing' } },
+    });
+  });
+
+  it('dataModelUpdate 指定 path 合并到子路径', () => {
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+    };
+
+    initStore(renderMap);
+    const raw = [
+      '{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"t1","component":{"Text":{"text":{"literalString":"Hi"}}}}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s1","contents":[{"key":"name","valueString":"Root"}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s1","path":"/user","contents":[{"key":"age","valueNumber":30}]}}',
+      '{"beginRendering":{"surfaceId":"s1","root":"t1"}}',
+    ].join('\n');
+    loadJsonlIntoStore(raw);
+
+    const state = getStore().getState();
+    const model = state.getDataModel('s1');
+    expect(model).to.deep.equal({
+      name: 'Root',
+      user: { age: 30 },
+    });
+  });
+
+  it('多次 dataModelUpdate 增量合并', () => {
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+    };
+
+    initStore(renderMap);
+    const raw = [
+      '{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"t1","component":{"Text":{"text":{"literalString":"Hi"}}}}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s1","contents":[{"key":"a","valueNumber":1}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s1","contents":[{"key":"b","valueNumber":2}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s1","contents":[{"key":"c","valueNumber":3}]}}',
+      '{"beginRendering":{"surfaceId":"s1","root":"t1"}}',
+    ].join('\n');
+    loadJsonlIntoStore(raw);
+
+    const model = getStore().getState().getDataModel('s1');
+    expect(model).to.deep.equal({ a: 1, b: 2, c: 3 });
+  });
+
+  it('dataModelUpdate 空 contents 不破坏已有数据', () => {
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+    };
+
+    initStore(renderMap);
+    const raw = [
+      '{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"t1","component":{"Text":{"text":{"literalString":"Hi"}}}}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s1","contents":[{"key":"x","valueNumber":1}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s1","contents":[]}}',
+      '{"beginRendering":{"surfaceId":"s1","root":"t1"}}',
+    ].join('\n');
+    loadJsonlIntoStore(raw);
+
+    const model = getStore().getState().getDataModel('s1');
+    // 空 contents 解析为空对象 → 合并到 root 不改变已有 key
+    expect(model).to.have.property('x', 1);
+  });
+
+  it('dataModelUpdate 先于 surfaceUpdate 到达也能正确存储', () => {
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+    };
+
+    initStore(renderMap);
+    const raw = [
+      '{"dataModelUpdate":{"surfaceId":"s1","contents":[{"key":"preload","valueString":"yes"}]}}',
+      '{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"t1","component":{"Text":{"text":{"literalString":"Hi"}}}}]}}',
+      '{"beginRendering":{"surfaceId":"s1","root":"t1"}}',
+    ].join('\n');
+    loadJsonlIntoStore(raw);
+
+    const model = getStore().getState().getDataModel('s1');
+    expect(model).to.deep.equal({ preload: 'yes' });
+  });
+
+  it('不同 surface 的 data model 互相隔离', () => {
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+    };
+
+    initStore(renderMap);
+    const raw = [
+      '{"dataModelUpdate":{"surfaceId":"s1","contents":[{"key":"val","valueString":"one"}]}}',
+      '{"dataModelUpdate":{"surfaceId":"s2","contents":[{"key":"val","valueString":"two"}]}}',
+      '{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"a1","component":{"Text":{"text":{"literalString":"A"}}}}]}}',
+      '{"surfaceUpdate":{"surfaceId":"s2","components":[{"id":"b1","component":{"Text":{"text":{"literalString":"B"}}}}]}}',
+      '{"beginRendering":{"surfaceId":"s1","root":"a1"}}',
+      '{"beginRendering":{"surfaceId":"s2","root":"b1"}}',
+    ].join('\n');
+    loadJsonlIntoStore(raw);
+
+    const state = getStore().getState();
+    expect(state.getDataModel('s1')).to.deep.equal({ val: 'one' });
+    expect(state.getDataModel('s2')).to.deep.equal({ val: 'two' });
+  });
+
+  it('初始化简写：path+literal 的 Text 自动写入 data model', () => {
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+      Column: (props) => ({
+        __a2ui_container: true,
+        type: 'Column',
+        props: {},
+        childIds: props.children?.explicitList ?? [],
+      }),
+    };
+
+    initStore(renderMap);
+    const raw = [
+      '{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"col","component":{"Column":{"children":{"explicitList":["t1"]}}}},{"id":"t1","component":{"Text":{"text":{"path":"/greeting","literalString":"默认问候语"},"usageHint":"h2"}}}]}}',
+      '{"beginRendering":{"surfaceId":"s1","root":"col"}}',
+    ].join('\n');
+    loadJsonlIntoStore(raw);
+
+    const state = getStore().getState();
+    const model = state.getDataModel('s1');
+    expect(model).to.have.property('greeting', '默认问候语');
+  });
+
+  it('初始化简写：多个组件各自的简写独立写入', () => {
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+      Column: (props) => ({
+        __a2ui_container: true,
+        type: 'Column',
+        props: {},
+        childIds: props.children?.explicitList ?? [],
+      }),
+    };
+
+    initStore(renderMap);
+    const raw = [
+      '{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"col","component":{"Column":{"children":{"explicitList":["t1","t2"]}}}},{"id":"t1","component":{"Text":{"text":{"path":"/a","literalString":"A"}}}},{"id":"t2","component":{"Text":{"text":{"path":"/b","literalString":"B"}}}}]}}',
+      '{"beginRendering":{"surfaceId":"s1","root":"col"}}',
+    ].join('\n');
+    loadJsonlIntoStore(raw);
+
+    const model = getStore().getState().getDataModel('s1');
+    expect(model).to.deep.equal({ a: 'A', b: 'B' });
+  });
+
+  it('仅 path 无 literal（非简写）不写入 data model', () => {
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+      Column: (props) => ({
+        __a2ui_container: true,
+        type: 'Column',
+        props: {},
+        childIds: props.children?.explicitList ?? [],
+      }),
+    };
+
+    initStore(renderMap);
+    const raw = [
+      '{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"col","component":{"Column":{"children":{"explicitList":["t1"]}}}},{"id":"t1","component":{"Text":{"text":{"path":"/onlyPath"}}}}]}}',
+      '{"beginRendering":{"surfaceId":"s1","root":"col"}}',
+    ].join('\n');
+    loadJsonlIntoStore(raw);
+
+    const model = getStore().getState().getDataModel('s1');
+    // 没有简写 → 不应有数据写入
+    expect(model).to.satisfy((m: any) => m === undefined || Object.keys(m ?? {}).length === 0);
+  });
+
+  it('完整 data-binding-mock 加载验证（单行拼接 JSON → StreamProcessor）', () => {
+    const DATA_BINDING_MOCK = readMock('data-binding-mock.json');
+
+    const renderMap: RenderMap = {
+      Text: (props) => ({ __rendered: true, type: 'Text', props }),
+      Column: (props) => ({
+        __a2ui_container: true,
+        type: 'Column',
+        props: {},
+        childIds: props.children?.explicitList ?? [],
+      }),
+      Row: (props) => ({
+        __a2ui_container: true,
+        type: 'Row',
+        props: {},
+        childIds: props.children?.explicitList ?? [],
+        template: props.children?.template ?? undefined,
+      }),
+      Card: (props) => ({
+        __a2ui_container: true,
+        type: 'Card',
+        props: {},
+        childIds: props.child ? [props.child] : [],
+      }),
+      Image: (props) => ({ __rendered: true, type: 'Image', props }),
+    };
+
+    initStore(renderMap);
+
+    // 单行拼接格式：用 StreamProcessor（内部 AutoCompleteBuffer）解析
+    const sp = new StreamProcessor();
+    sp.feed(DATA_BINDING_MOCK);
+    sp.flush();
+
+    const state = getStore().getState();
+
+    // 验证 data model 已正确写入
+    const model = state.getDataModel('s1');
+    expect(model).to.exist;
+    expect(model).to.have.property('page');
+    expect(model).to.have.property('user');
+    expect(model).to.have.property('items');
+    expect(model!.user).to.deep.equal({ name: '张三', avatar: 'https://i.pravatar.cc/150?u=zhangsan' });
+    expect(model!.items).to.have.property('a');
+    expect(model!.items).to.have.property('b');
+    expect(model!.items).to.have.property('c');
+
+    // 验证组件全部注册（11 个组件：root, title, user_card, user_content,...）
+    expect(Object.keys(state.hydrateNodeMap).length).to.equal(11);
+
+    // 验证 surface
+    const surface = state.getSurface('s1');
+    expect(surface).to.exist;
+    expect(surface!.beginRender).to.be.true;
+    expect(surface!.rootNode).to.exist;
+
+    // dataModelUpdate 覆盖了简写初始值 "加载中..."
+    expect(model!.page.title).to.equal('用户信息卡片');
+  });
+});

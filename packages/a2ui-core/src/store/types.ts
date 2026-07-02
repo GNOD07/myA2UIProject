@@ -127,6 +127,16 @@ export interface A2UIStoreState {
    * 由 init(renderMap, onTreeChange) 注入。
    */
   onTreeChange?: TreeChangeCallback;
+  /**
+   * 数据模型映射表：surfaceId → 嵌套数据对象。
+   * 由 dataModelUpdate 消息写入，buildTree 时读取用于解析 BoundValue。
+   */
+  dataModelMap: Record<string, Record<string, any>>;
+  /**
+   * 数据模型版本号。每次 setDataModelAt 写入时递增，
+   * 用作 React useMemo 的稳定依赖。
+   */
+  dataModelVersion: number;
 }
 
 /**
@@ -170,6 +180,16 @@ export interface A2UIStoreActions {
   clear: () => void;
   /** 清空指定 Surface 及其关联的所有节点和错误 */
   clearSurface: (surfaceId: string) => void;
+
+  // ===== Data Model CRUD =====
+  /** 按路径设置数据模型（深层合并；path 为 "/" 或 undefined 时替换整个 model） */
+  setDataModelAt: (surfaceId: string, path: string | undefined, value: any) => void;
+  /** 获取指定 surface 的完整数据模型 */
+  getDataModel: (surfaceId: string) => Record<string, any> | undefined;
+  /** 按路径从数据模型取值（如 "/user/name"） */
+  getDataModelValue: (surfaceId: string, dataPath: string) => any;
+  /** 清除指定 surface 的数据模型 */
+  clearDataModel: (surfaceId: string) => void;
 }
 
 /**

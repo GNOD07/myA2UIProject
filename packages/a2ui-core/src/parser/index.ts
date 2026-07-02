@@ -5,10 +5,13 @@ export interface SurfaceUpdateMessage {
   };
 }
 
+import type { DataModelEntry } from "../binding/index.js";
+import { parseAdjacencyListToObject, extractInitShorthand } from "../binding/index.js";
+
 export interface DataModelUpdateMessage {
   dataModelUpdate: {
     surfaceId: string;
-    contents: Record<string, any>;
+    contents: DataModelEntry[];
     path?: string;
   };
 }
@@ -143,7 +146,26 @@ export function processMessage(message: A2UIMessage): void {
       });
     }
 
-    // 2. 确保 Surface 存在（后续 beginRendering 会更新 rootNode）
+    // 2. 初始化简写：扫描组件 props 中同时有 path 和 literal* 的 BoundValue
+    //    协议 §4.2：path + literal 同时存在 → 隐式 dataModelUpdate
+    //    按 parentPath 分组写入，避免同路径多条简写互相覆盖
+    const shorthandByParent: Record<string, DataModelEntry[]> = {};
+    for (const component of components) {
+      const compType = Object.keys(component.component)[0];
+      const compProps = component.component[compType];
+      for (const { parentPath, entry } of extractInitShorthand(compProps)) {
+        if (!shorthandByParent[parentPath]) {
+          shorthandByParent[parentPath] = [];
+        }
+        shorthandByParent[parentPath].push(entry);
+      }
+    }
+    for (const [parentPath, entries] of Object.entries(shorthandByParent)) {
+      const obj = parseAdjacencyListToObject(entries);
+      storeState.setDataModelAt(surfaceId, parentPath, obj);
+    }
+
+    // 3. 确保 Surface 存在（后续 beginRendering 会更新 rootNode）
     const existingSurface = storeState.getSurface(surfaceId);
     if (!existingSurface) {
       storeState.addSurface({
@@ -153,8 +175,12 @@ export function processMessage(message: A2UIMessage): void {
       });
     }
   } else if ("dataModelUpdate" in message) {
-    // 数据模型更新：当前仅追踪，后续可扩展 dataModelMap 存储
-    // 保留此分支供未来按 path 更新组件 props
+    // 数据模型更新：邻接表 → 嵌套对象 → 写入 store
+    const { surfaceId, contents, path } = message.dataModelUpdate;
+    // 兼容旧 mock（contents 为 {} 空对象，非数组）
+    const entries = Array.isArray(contents) ? contents : [];
+    const parsed = parseAdjacencyListToObject(entries);
+    storeState.setDataModelAt(surfaceId, path, parsed);
   } else if ("beginRendering" in message) {
     const { surfaceId, root } = message.beginRendering;
 

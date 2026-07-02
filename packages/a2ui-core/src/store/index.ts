@@ -24,6 +24,8 @@ const EMPTY_DATA = {
   surfaceMap: {} as Record<string, Surface>,
   hydrateNodeMap: {} as Record<string, HydrateNode>,
   errorMap: {} as Record<string, A2UIError>,
+  dataModelMap: {} as Record<string, Record<string, any>>,
+  dataModelVersion: 0,
 };
 
 /**
@@ -163,6 +165,7 @@ function createA2UIStore(renderMap: RenderMap = {}, onTreeChange?: TreeChangeCal
       set((state) => ({
         ...EMPTY_DATA,
         renderMap: state.renderMap,
+        onTreeChange: state.onTreeChange,
       }));
     },
 
@@ -187,11 +190,87 @@ function createA2UIStore(renderMap: RenderMap = {}, onTreeChange?: TreeChangeCal
         // 删除 surface 本身
         const { [surfaceId]: _, ...newSurfaceMap } = state.surfaceMap;
 
+        // 删除该 surface 的 data model
+        const { [surfaceId]: __, ...newDataModelMap } = state.dataModelMap;
+
         return {
           surfaceMap: newSurfaceMap,
           hydrateNodeMap: newHydrateNodeMap,
           errorMap: newErrorMap,
+          dataModelMap: newDataModelMap,
         };
+      });
+    },
+
+    // ===== Data Model CRUD =====
+
+    setDataModelAt: (surfaceId: string, path: string | undefined, value: any) => {
+      set((state) => {
+        const current = state.dataModelMap[surfaceId] ?? {};
+
+        // 根路径或 undefined → 浅合并到 data model 根
+        if (path === undefined || path === '/' || path === '') {
+          return {
+            dataModelMap: {
+              ...state.dataModelMap,
+              [surfaceId]: { ...current, ...value },
+            },
+            dataModelVersion: state.dataModelVersion + 1,
+          };
+        }
+
+        // 深层合并：沿路径查找/创建中间对象
+        const segments = path.split('/').filter(Boolean);
+        const newModel = JSON.parse(JSON.stringify(current)); // deep clone
+
+        let target: Record<string, any> = newModel;
+        for (let i = 0; i < segments.length - 1; i++) {
+          if (typeof target[segments[i]] !== 'object' || target[segments[i]] === null) {
+            target[segments[i]] = {};
+          }
+          target = target[segments[i]];
+        }
+
+        // 在叶子位置合并（如果已存在对象则合并，否则直接赋值）
+        const existing = target[segments[segments.length - 1]];
+        if (typeof existing === 'object' && existing !== null && !Array.isArray(existing) &&
+            typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          target[segments[segments.length - 1]] = { ...existing, ...value };
+        } else {
+          target[segments[segments.length - 1]] = value;
+        }
+
+        return {
+          dataModelMap: {
+            ...state.dataModelMap,
+            [surfaceId]: newModel,
+          },
+          dataModelVersion: state.dataModelVersion + 1,
+        };
+      });
+    },
+
+    getDataModel: (surfaceId: string) => {
+      return get().dataModelMap[surfaceId];
+    },
+
+    getDataModelValue: (surfaceId: string, dataPath: string) => {
+      const model = get().dataModelMap[surfaceId];
+      if (!model) return undefined;
+
+      const segments = dataPath.split('/').filter(Boolean);
+      let current: any = model;
+      for (const seg of segments) {
+        if (current === null || typeof current !== 'object') return undefined;
+        current = current[seg];
+      }
+      return current;
+    },
+
+    clearDataModel: (surfaceId: string) => {
+      set((state) => {
+        const { [surfaceId]: _, ...rest } = state.dataModelMap;
+        return { dataModelMap: rest };
       });
     },
   }));

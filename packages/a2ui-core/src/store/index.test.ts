@@ -486,7 +486,124 @@ describe('A2UI Store (contract validation against store.md)', () => {
   // 8. 单例生命周期
   // --------------------------------------------------------------------------
 
-  describe('8. 单例生命周期', () => {
+  // --------------------------------------------------------------------------
+  // 8. Data Model 存储（dataModelUpdate）
+  // --------------------------------------------------------------------------
+
+  describe('8. Data Model CRUD', () => {
+    it('setDataModelAt — 根路径 "/" 替换整个 data model', () => {
+      const store = initStore();
+      store.getState().setDataModelAt('s1', '/', { user: { name: 'Bob' } });
+
+      const model = store.getState().getDataModel('s1');
+      expect(model).to.deep.equal({ user: { name: 'Bob' } });
+    });
+
+    it('setDataModelAt — undefined path 等同于根路径替换', () => {
+      const store = initStore();
+      store.getState().setDataModelAt('s1', undefined, { x: 1 });
+
+      expect(store.getState().getDataModel('s1')).to.deep.equal({ x: 1 });
+    });
+
+    it('setDataModelAt — 嵌套路径深层合并', () => {
+      const store = initStore();
+      store.getState().setDataModelAt('s1', '/', { user: { name: 'Bob' } });
+      store.getState().setDataModelAt('s1', '/user/age', 25);
+
+      const model = store.getState().getDataModel('s1');
+      expect(model).to.deep.equal({ user: { name: 'Bob', age: 25 } });
+    });
+
+    it('setDataModelAt — 深层路径自动创建中间对象', () => {
+      const store = initStore();
+      store.getState().setDataModelAt('s1', '/a/b/c', 'deep');
+
+      const model = store.getState().getDataModel('s1');
+      expect(model).to.deep.equal({ a: { b: { c: 'deep' } } });
+    });
+
+    it('setDataModelAt — 路径不存在时安全创建（空 data model）', () => {
+      const store = initStore();
+      store.getState().setDataModelAt('s2', '/key', 'val');
+
+      expect(store.getState().getDataModel('s2')).to.deep.equal({ key: 'val' });
+    });
+
+    it('getDataModelValue — 按路径取值', () => {
+      const store = initStore();
+      store.getState().setDataModelAt('s1', '/', {
+        user: { name: 'Bob', age: 30 },
+        items: { a: { title: 'Item A' } },
+      });
+
+      const s = store.getState();
+      expect(s.getDataModelValue('s1', '/user/name')).to.equal('Bob');
+      expect(s.getDataModelValue('s1', '/user/age')).to.equal(30);
+      expect(s.getDataModelValue('s1', '/items/a/title')).to.equal('Item A');
+    });
+
+    it('getDataModelValue — 不存在的路径返回 undefined', () => {
+      const store = initStore();
+      store.getState().setDataModelAt('s1', '/', { x: 1 });
+
+      expect(store.getState().getDataModelValue('s1', '/y/z')).to.be.undefined;
+      expect(store.getState().getDataModelValue('s1', '/nonexistent')).to.be.undefined;
+    });
+
+    it('getDataModelValue — 不存在的 surface 返回 undefined（不抛错）', () => {
+      const store = initStore();
+      expect(store.getState().getDataModelValue('ghost', '/any')).to.be.undefined;
+    });
+
+    it('clearDataModel — 清除单个 surface 的 data model', () => {
+      const store = initStore();
+      store.getState().setDataModelAt('s1', '/', { x: 1 });
+      store.getState().setDataModelAt('s2', '/', { y: 2 });
+
+      store.getState().clearDataModel('s1');
+
+      expect(store.getState().getDataModel('s1')).to.be.undefined;
+      // s2 不受影响
+      expect(store.getState().getDataModel('s2')).to.deep.equal({ y: 2 });
+    });
+
+    it('dataModelVersion — 每次 setDataModelAt 递增', () => {
+      const store = initStore();
+      const v0 = store.getState().dataModelVersion;
+
+      store.getState().setDataModelAt('s1', '/', { a: 1 });
+      const v1 = store.getState().dataModelVersion;
+      expect(v1).to.be.greaterThan(v0);
+
+      store.getState().setDataModelAt('s1', '/b', 2);
+      const v2 = store.getState().dataModelVersion;
+      expect(v2).to.be.greaterThan(v1);
+    });
+
+    it('clearSurface — 级联清除 data model', () => {
+      const store = initStore();
+      store.getState().setDataModelAt('s1', '/', { x: 1 });
+      store.getState().setDataModelAt('s2', '/', { y: 2 });
+
+      store.getState().clearSurface('s1');
+
+      expect(store.getState().getDataModel('s1')).to.be.undefined;
+      expect(store.getState().getDataModel('s2')).to.deep.equal({ y: 2 });
+    });
+
+    it('clear — 重置所有 data model', () => {
+      const store = initStore();
+      store.getState().setDataModelAt('s1', '/', { x: 1 });
+      store.getState().clear();
+
+      expect(store.getState().getDataModel('s1')).to.be.undefined;
+      expect(store.getState().dataModelMap).to.deep.equal({});
+      expect(store.getState().dataModelVersion).to.equal(0);
+    });
+  });
+
+  describe('9. 单例生命周期', () => {
     it('resetStore 清空状态但不销毁实例', () => {
       const store = initStore();
       store.getState().addSurface(mockSurface(null));
