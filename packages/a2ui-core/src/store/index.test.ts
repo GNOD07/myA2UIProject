@@ -81,6 +81,7 @@ function mockSurface(rootNode: HydrateNode | null = null): Surface {
     surfaceId: 'main-page',
     beginRender: false,
     rootNode,
+    rootComponentId: null,
   };
 }
 
@@ -296,6 +297,7 @@ describe('A2UI Store (contract validation against store.md)', () => {
         surfaceId: 'sidebar',
         beginRender: false,
         rootNode: rootCol2,
+        rootComponentId: null,
       });
 
       // 各自 rootNode 指向不同实例
@@ -379,6 +381,7 @@ describe('A2UI Store (contract validation against store.md)', () => {
         surfaceId: 'sidebar',
         beginRender: false,
         rootNode: null,
+        rootComponentId: null,
       });
 
       // 执行级联删除
@@ -435,6 +438,7 @@ describe('A2UI Store (contract validation against store.md)', () => {
         surfaceId: 'main-page',
         beginRender: true,
         rootNode: rootCol,
+        rootComponentId: null,
       });
     }
 

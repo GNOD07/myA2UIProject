@@ -85,8 +85,16 @@ export interface Surface {
   /**
    * 根节点指针，直接指向 hydrateNodeMap 中的 HydrateNode 实例。
    * 空间换时间：避免二次 Map 查找。
+   * 当 beginRendering 先于 surfaceUpdate 到达时可能为 null，
+   * 此时等 surfaceUpdate 注册了对应组件后再回补。
    */
   rootNode: HydrateNode | null;
+  /**
+   * beginRendering 中指定的根组件 ID。
+   * 当 rootNode 因组件尚未注册而为 null 时，
+   * 后续 surfaceUpdate 可通过此 ID 匹配并回补 rootNode。
+   */
+  rootComponentId: string | null;
 }
 
 /**

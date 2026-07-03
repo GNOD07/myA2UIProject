@@ -32,7 +32,10 @@ export const Text: ComponentRenderer = (props, componentId?) => ({
 
 /** React 渲染组件：VNode → DOM */
 export function TextRenderer({ text, usageHint, componentId }: ResolvedTextProps) {
-  const tag = usageHint && usageHint !== "body" ? usageHint : "span";
+  // h1~h5 使用对应 HTML 标题标签，caption/body 使用 span
+  // 注意：不能渲染原生 <caption> 元素，它只能是 <table> 的子元素
+  const isHeading = usageHint && /^h[1-5]$/.test(usageHint);
+  const tag = isHeading ? usageHint : "span";
   return React.createElement(
     tag,
     {

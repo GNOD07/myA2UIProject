@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { flushSync } from "react-dom";
 import { Button, Modal, Card, Select, Space, Switch } from "antd";
 import {
   init,
@@ -17,6 +16,7 @@ import videoMock from "../../../packages/a2ui-core/mock/video-mock.json?raw";
 import cardMock from "../../../packages/a2ui-core/mock/card-mock.json?raw";
 import dataBindingMock from "../../../packages/a2ui-core/mock/data-binding-mock.json?raw";
 import listMock from "../../../packages/a2ui-core/mock/list-mock.json?raw";
+import cartListMock from "../../../packages/a2ui-core/mock/cart-list-mock.json?raw";
 import { useStore, defaultRenderMap, A2UIRenderer } from "@a2ui/react";
 import type { SurfaceTree } from "@a2ui/core";
 
@@ -60,13 +60,17 @@ const MOCK_REGISTRY: Record<string, { label: string; data: string }> = {
     label: "List Demo — List 组件 / template 动态列表",
     data: listMock,
   },
+  "cart-list-demo": {
+    label: "Cart List Demo — 购物车列表预览",
+    data: cartListMock,
+  },
 };
 
 export function App() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [trees, setTrees] = useState<SurfaceTree[]>([]);
-  const [selectedMock, setSelectedMock] = useState<string>("nested-column");
+  const [selectedMock, setSelectedMock] = useState<string>("cart-list-demo");
   const [streamMode, setStreamMode] = useState(true);
   const [streaming, setStreaming] = useState(false);
   const [streamProgress, setStreamProgress] = useState<string | null>(null);
@@ -96,15 +100,15 @@ export function App() {
     destroyStore();
 
     const rawData = MOCK_REGISTRY[mockKey].data;
-    const estimatedTotal = (rawData.match(/\{"(surfaceUpdate|beginRendering|dataModelUpdate|deleteSurface)"/g) || []).length;
+    // 估算组件数：统计 "id":" 出现次数 / 2（消息体 + 引用各出现一次）
+    const idMatches = rawData.match(/"id"\s*:\s*"/g) || [];
+    const estimatedTotal = Math.max(1, Math.ceil(idMatches.length / 2));
 
     let processedCount = 0;
     init(defaultRenderMap, (trees) => {
       processedCount++;
-      flushSync(() => {
-        setTrees(trees);
-        setStreamProgress(estimatedTotal ? `${processedCount}/${estimatedTotal}` : `${processedCount}`);
-      });
+      setTrees(trees);
+      setStreamProgress(estimatedTotal ? `${processedCount}/${estimatedTotal}` : `${processedCount}`);
     });
 
     setSelectedMock(mockKey);
@@ -112,20 +116,15 @@ export function App() {
     setTrees([]);
 
     const sp = new StreamProcessor();
-    const CHUNK_SIZE = 50;
-    const INTERVAL_MS = 50;
-    let ptr = 0;
-    while (ptr < rawData.length) {
-      if (abortRef.current) {
-        sp.flush();
-        setStreaming(false);
-        setStreamProgress(null);
-        return;
-      }
-      const chunk = rawData.slice(ptr, ptr + CHUNK_SIZE);
-      ptr += CHUNK_SIZE;
+    const CHUNK_SIZE = 40;   // 每次推送 ~40 字符，模拟 LLM token 输出
+    const CHUNK_DELAY = 10;  // 每块间隔 ~10ms
+
+    let offset = 0;
+    while (offset < rawData.length && !abortRef.current) {
+      const chunk = rawData.slice(offset, offset + CHUNK_SIZE);
       sp.feed(chunk);
-      await new Promise((r) => setTimeout(r, INTERVAL_MS));
+      offset += CHUNK_SIZE;
+      await new Promise((r) => setTimeout(r, CHUNK_DELAY));
     }
 
     sp.flush();

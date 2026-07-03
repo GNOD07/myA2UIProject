@@ -172,7 +172,24 @@ export function processMessage(message: A2UIMessage): void {
         surfaceId,
         beginRender: false,
         rootNode: null,
+        rootComponentId: null,
       });
+    }
+
+    // 4. 回补 rootNode：处理 beginRendering 先于 surfaceUpdate 到达的情况
+    //    此时 Surface 已标记 beginRender=true 但 rootNode=null，
+    //    等组件注册后通过 rootComponentId 匹配并补全 rootNode
+    const surface = storeState.getSurface(surfaceId);
+    if (surface && surface.beginRender && !surface.rootNode && surface.rootComponentId) {
+      for (const component of components) {
+        if (component.id === surface.rootComponentId) {
+          const resolvedNode = storeState.getHydrateNode(component.id);
+          if (resolvedNode) {
+            storeState.updateSurface(surfaceId, { rootNode: resolvedNode });
+          }
+          break;
+        }
+      }
     }
   } else if ("dataModelUpdate" in message) {
     // 数据模型更新：邻接表 → 嵌套对象 → 写入 store
@@ -191,6 +208,7 @@ export function processMessage(message: A2UIMessage): void {
         surfaceId,
         beginRender: false,
         rootNode: null,
+        rootComponentId: root,
       });
     }
 
@@ -198,6 +216,7 @@ export function processMessage(message: A2UIMessage): void {
     storeState.updateSurface(surfaceId, {
       beginRender: true,
       rootNode,
+      rootComponentId: root,
     });
   } else if ("deleteSurface" in message) {
     storeState.clearSurface(message.deleteSurface.surfaceId);
@@ -223,7 +242,7 @@ export function loadJsonlIntoStore(raw: string): ParsedResult {
 // StreamProcessor — 集成缓冲区的流式解析器
 // ============================================================
 
-import { AutoCompleteBuffer } from "../buffer/index.js";
+import { AutoCompleteBuffer, splitSurfaceUpdate } from "../buffer/index.js";
 
 /**
  * 每次成功处理一条消息后的回调
@@ -284,7 +303,11 @@ export class StreamProcessor {
       return;
     }
 
-    processMessage(message);
-    this._onMessage?.(message);
+    // 拆分多组件 surfaceUpdate → 每条一个 component
+    const messages = splitSurfaceUpdate(message);
+    for (const msg of messages) {
+      processMessage(msg);
+      this._onMessage?.(msg);
+    }
   }
 }
