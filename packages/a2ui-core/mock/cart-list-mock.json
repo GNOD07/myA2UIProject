@@ -1,5 +1,283 @@
-{"beginRendering":{"surfaceId":"cart_surface","root":"root"}}
-{"surfaceUpdate":{"surfaceId":"cart_surface","components":[{"id":"root","component":{"Column":{"children":{"explicitList":["header","subtitle","summary_row","cart_list","checkout_btn"]}}}}]}}
-{"surfaceUpdate":{"surfaceId":"cart_surface","components":[{"id":"header","component":{"Text":{"text":{"literalString":"🛒 购物车"},"usageHint":"h2"}}},{"id":"subtitle","component":{"Text":{"text":{"path":"/cart/subtitle","literalString":"正在为你整理商品"},"usageHint":"body"}}},{"id":"summary_row","component":{"Row":{"children":{"explicitList":["summary_items","summary_total"]},"distribution":"spaceBetween","alignment":"center"}}},{"id":"summary_items","component":{"Text":{"text":{"path":"/cart/itemCount","literalString":"0 件商品"},"usageHint":"caption"}}},{"id":"summary_total","component":{"Text":{"text":{"path":"/cart/total","literalString":"¥0.00"},"usageHint":"h3"}}},{"id":"cart_list","component":{"List":{"children":{"template":{"componentId":"item_template","dataBinding":"/cart/items"}},"direction":"vertical","alignment":"stretch"}}},{"id":"item_template","component":{"Card":{"child":"item_content"}}},{"id":"item_content","component":{"Column":{"children":{"explicitList":["item_name","item_meta"]}}}},{"id":"item_name","component":{"Text":{"text":{"path":"name"},"usageHint":"body"}}},{"id":"item_meta","component":{"Row":{"children":{"explicitList":["item_price","item_qty"]},"distribution":"spaceBetween","alignment":"center"}}},{"id":"item_price","component":{"Text":{"text":{"path":"price"},"usageHint":"caption"}}},{"id":"item_qty","component":{"Text":{"text":{"path":"qty"},"usageHint":"caption"}}},{"id":"checkout_btn","component":{"Button":{"child":"checkout_label","primary":true,"action":{"name":"checkout","context":[{"key":"source","value":{"literalString":"cart"}}]}}}},{"id":"checkout_label","component":{"Text":{"text":{"literalString":"去结算"},"usageHint":"body"}}}]}}
-{"dataModelUpdate":{"surfaceId":"cart_surface","contents":[{"key":"cart","valueMap":[{"key":"subtitle","valueString":"3 件商品，已为你准备好结算"},{"key":"itemCount","valueString":"3"},{"key":"total","valueString":"¥368.00"}]}]}}
-{"dataModelUpdate":{"surfaceId":"cart_surface","path":"/cart/items","contents":[{"key":"a","valueMap":[{"key":"name","valueString":"智能手表"},{"key":"price","valueString":"¥199.00"},{"key":"qty","valueString":"x1"}]},{"key":"b","valueMap":[{"key":"name","valueString":"无线耳机"},{"key":"price","valueString":"¥129.00"},{"key":"qty","valueString":"x1"}]},{"key":"c","valueMap":[{"key":"name","valueString":"移动电源"},{"key":"price","valueString":"¥40.00"},{"key":"qty","valueString":"x2"}]}]}}
+[
+  {
+    "beginRendering": {
+      "surfaceId": "cart_surface",
+      "root": "root"
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "cart_surface",
+      "components": [
+        {
+          "id": "root",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["header", "subtitle", "summary_row", "cart_list", "checkout_btn"]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "cart_surface",
+      "components": [
+        {
+          "id": "header",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "🛒 购物车"
+              },
+              "usageHint": "h2"
+            }
+          }
+        },
+        {
+          "id": "subtitle",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "/cart/subtitle",
+                "literalString": "正在为你整理商品"
+              },
+              "usageHint": "body"
+            }
+          }
+        },
+        {
+          "id": "summary_row",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": ["summary_items", "summary_total"]
+              },
+              "distribution": "spaceBetween",
+              "alignment": "center"
+            }
+          }
+        },
+        {
+          "id": "summary_items",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "/cart/itemCount",
+                "literalString": "0 件商品"
+              },
+              "usageHint": "caption"
+            }
+          }
+        },
+        {
+          "id": "summary_total",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "/cart/total",
+                "literalString": "¥0.00"
+              },
+              "usageHint": "h3"
+            }
+          }
+        },
+        {
+          "id": "cart_list",
+          "component": {
+            "List": {
+              "children": {
+                "template": {
+                  "componentId": "item_template",
+                  "dataBinding": "/cart/items"
+                }
+              },
+              "direction": "vertical",
+              "alignment": "stretch"
+            }
+          }
+        },
+        {
+          "id": "item_template",
+          "component": {
+            "Card": {
+              "child": "item_content"
+            }
+          }
+        },
+        {
+          "id": "item_content",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["item_name", "item_meta"]
+              }
+            }
+          }
+        },
+        {
+          "id": "item_name",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "name"
+              },
+              "usageHint": "body"
+            }
+          }
+        },
+        {
+          "id": "item_meta",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": ["item_price", "item_qty"]
+              },
+              "distribution": "spaceBetween",
+              "alignment": "center"
+            }
+          }
+        },
+        {
+          "id": "item_price",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "price"
+              },
+              "usageHint": "caption"
+            }
+          }
+        },
+        {
+          "id": "item_qty",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "qty"
+              },
+              "usageHint": "caption"
+            }
+          }
+        },
+        {
+          "id": "checkout_btn",
+          "component": {
+            "Button": {
+              "child": "checkout_label",
+              "primary": true,
+              "action": {
+                "name": "checkout",
+                "context": [
+                  {
+                    "key": "source",
+                    "value": {
+                      "literalString": "cart"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "checkout_label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "去结算"
+              },
+              "usageHint": "body"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dataModelUpdate": {
+      "surfaceId": "cart_surface",
+      "contents": [
+        {
+          "key": "cart",
+          "valueMap": [
+            {
+              "key": "subtitle",
+              "valueString": "3 件商品，已为你准备好结算"
+            },
+            {
+              "key": "itemCount",
+              "valueString": "3"
+            },
+            {
+              "key": "total",
+              "valueString": "¥368.00"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "dataModelUpdate": {
+      "surfaceId": "cart_surface",
+      "path": "/cart/items",
+      "contents": [
+        {
+          "key": "a",
+          "valueMap": [
+            {
+              "key": "name",
+              "valueString": "智能手表"
+            },
+            {
+              "key": "price",
+              "valueString": "¥199.00"
+            },
+            {
+              "key": "qty",
+              "valueString": "x1"
+            }
+          ]
+        },
+        {
+          "key": "b",
+          "valueMap": [
+            {
+              "key": "name",
+              "valueString": "无线耳机"
+            },
+            {
+              "key": "price",
+              "valueString": "¥129.00"
+            },
+            {
+              "key": "qty",
+              "valueString": "x1"
+            }
+          ]
+        },
+        {
+          "key": "c",
+          "valueMap": [
+            {
+              "key": "name",
+              "valueString": "移动电源"
+            },
+            {
+              "key": "price",
+              "valueString": "¥40.00"
+            },
+            {
+              "key": "qty",
+              "valueString": "x2"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

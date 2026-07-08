@@ -234,6 +234,10 @@ export function loadJsonlIntoStore(raw: string): ParsedResult {
     processMessage(message);
   }
 
+  // 批量加载完成后立即刷新组件树（跳过 debounce）
+  const store = getStore();
+  store.getState().flushTreeChange();
+
   // 返回 ParsedResult 保持向后兼容
   return parseMessages(messages);
 }
@@ -276,12 +280,15 @@ export class StreamProcessor {
     }
   }
 
-  /** 冲刷缓冲区残留 */
+  /** 冲刷缓冲区残留，并立即刷新组件树 */
   flush(): void {
     const jsonStrings = this._buffer.flush();
     for (const raw of jsonStrings) {
       this._processOne(raw);
     }
+    // 流结束：立即刷新组件树（跳过 debounce 等待）
+    const store = getStore();
+    store.getState().flushTreeChange();
   }
 
   /** 清空缓冲区（丢弃所有未处理数据） */

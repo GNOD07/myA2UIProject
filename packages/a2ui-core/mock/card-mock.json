@@ -1,1 +1,167 @@
-{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"root","component":{"Row":{"children":{"explicitList":["card1","card2"]},"distribution":"start","alignment":"start"}}}]}}{"beginRendering":{"surfaceId":"main_surface","root":"root"}}{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"card1","component":{"Card":{"child":"card1_inner"}}},{"id":"card1_inner","component":{"Column":{"children":{"explicitList":["card1_title","card1_body"]},"distribution":"start","alignment":"stretch"}}},{"id":"card1_title","component":{"Text":{"text":{"literalString":"卡片 A"},"usageHint":"h3"}}},{"id":"card1_body","component":{"Text":{"text":{"literalString":"一张包含标题和正文的卡片。Card 组件提供带阴影的白色圆角容器，适合展示分组内容。"},"usageHint":"span"}}},{"id":"card2","component":{"Card":{"child":"card2_inner"}}},{"id":"card2_inner","component":{"Column":{"children":{"explicitList":["card2_title","card2_image","card2_body","card2_btn"]},"distribution":"start","alignment":"stretch"}}},{"id":"card2_title","component":{"Text":{"text":{"literalString":"卡片 B"},"usageHint":"h3"}}},{"id":"card2_image","component":{"Image":{"url":{"literalString":"https://picsum.photos/seed/a2ui-card/400/200"},"usageHint":"mediumFeature","fit":"cover"}}},{"id":"card2_body","component":{"Text":{"text":{"literalString":"这张卡片里面嵌了一张图片，展示 Card 可以包裹任意子组件（Column、Text、Image 等）。"},"usageHint":"span"}}},{"id":"card2_btn","component":{"Button":{"child":"card2_btn_label","primary":true,"action":{"name":"card_action","context":[{"key":"source","value":{"literalString":"card2"}}]}}}},{"id":"card2_btn_label","component":{"Text":{"text":{"literalString":"了解更多"},"usageHint":"span"}}}]}}{"dataModelUpdate":{"surfaceId":"main_surface","contents":{}}}
+[
+  {
+    "surfaceUpdate": {
+      "surfaceId": "main_surface",
+      "components": [
+        {
+          "id": "root",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": ["card1", "card2"]
+              },
+              "distribution": "start",
+              "alignment": "start"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "beginRendering": {
+      "surfaceId": "main_surface",
+      "root": "root"
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "main_surface",
+      "components": [
+        {
+          "id": "card1",
+          "component": {
+            "Card": {
+              "child": "card1_inner"
+            }
+          }
+        },
+        {
+          "id": "card1_inner",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["card1_title", "card1_body"]
+              },
+              "distribution": "start",
+              "alignment": "stretch"
+            }
+          }
+        },
+        {
+          "id": "card1_title",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "卡片 A"
+              },
+              "usageHint": "h3"
+            }
+          }
+        },
+        {
+          "id": "card1_body",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "一张包含标题和正文的卡片。Card 组件提供带阴影的白色圆角容器，适合展示分组内容。"
+              },
+              "usageHint": "span"
+            }
+          }
+        },
+        {
+          "id": "card2",
+          "component": {
+            "Card": {
+              "child": "card2_inner"
+            }
+          }
+        },
+        {
+          "id": "card2_inner",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["card2_title", "card2_image", "card2_body", "card2_btn"]
+              },
+              "distribution": "start",
+              "alignment": "stretch"
+            }
+          }
+        },
+        {
+          "id": "card2_title",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "卡片 B"
+              },
+              "usageHint": "h3"
+            }
+          }
+        },
+        {
+          "id": "card2_image",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "https://picsum.photos/seed/a2ui-card/400/200"
+              },
+              "usageHint": "mediumFeature",
+              "fit": "cover"
+            }
+          }
+        },
+        {
+          "id": "card2_body",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "这张卡片里面嵌了一张图片，展示 Card 可以包裹任意子组件（Column、Text、Image 等）。"
+              },
+              "usageHint": "span"
+            }
+          }
+        },
+        {
+          "id": "card2_btn",
+          "component": {
+            "Button": {
+              "child": "card2_btn_label",
+              "primary": true,
+              "action": {
+                "name": "card_action",
+                "context": [
+                  {
+                    "key": "source",
+                    "value": {
+                      "literalString": "card2"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "card2_btn_label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "了解更多"
+              },
+              "usageHint": "span"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dataModelUpdate": {
+      "surfaceId": "main_surface",
+      "contents": {}
+    }
+  }
+]

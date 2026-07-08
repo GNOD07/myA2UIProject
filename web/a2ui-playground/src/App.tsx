@@ -3,12 +3,13 @@ import { Button, Modal, Card, Select, Space, Switch } from "antd";
 import {
   init,
   destroyStore,
+  getStore,
   StreamProcessor,
+  loadJsonlIntoStore,
 } from "@a2ui/core";
 import simpleTextMock from "../../../packages/a2ui-core/mock/simple-text.json?raw";
 import columnMock from "../../../packages/a2ui-core/mock/column-mock.json?raw";
 import nestedColumnMock from "../../../packages/a2ui-core/mock/nested-column-mock.json?raw";
-import nestedColumnJsonlMock from "../../../packages/a2ui-core/mock/nested-column-mock.jsonl?raw";
 import buttonMock from "../../../packages/a2ui-core/mock/button-mock.json?raw";
 import imageMock from "../../../packages/a2ui-core/mock/image-mock.json?raw";
 import iconMock from "../../../packages/a2ui-core/mock/icon-mock.json?raw";
@@ -17,6 +18,8 @@ import cardMock from "../../../packages/a2ui-core/mock/card-mock.json?raw";
 import dataBindingMock from "../../../packages/a2ui-core/mock/data-binding-mock.json?raw";
 import listMock from "../../../packages/a2ui-core/mock/list-mock.json?raw";
 import cartListMock from "../../../packages/a2ui-core/mock/cart-list-mock.json?raw";
+import localUpdateMock from "../../../packages/a2ui-core/mock/local-update-mock.json?raw";
+import openLinkMock from "../../../packages/a2ui-core/mock/open-link-mock.json?raw";
 import { useStore, defaultRenderMap, A2UIRenderer } from "@a2ui/react";
 import type { SurfaceTree } from "@a2ui/core";
 
@@ -27,10 +30,6 @@ const MOCK_REGISTRY: Record<string, { label: string; data: string }> = {
   "nested-column": {
     label: "Nested Column — 4 层嵌套",
     data: nestedColumnMock,
-  },
-  "nested-column-jsonl": {
-    label: "Nested Column JSONL — 单组件/消息流式",
-    data: nestedColumnJsonlMock,
   },
   "button-demo": {
     label: "Button Demo — primary / default / action",
@@ -64,35 +63,72 @@ const MOCK_REGISTRY: Record<string, { label: string; data: string }> = {
     label: "Cart List Demo — 购物车列表预览",
     data: cartListMock,
   },
+  "local-update": {
+    label: "Local Update — Button 更新 Text",
+    data: localUpdateMock,
+  },
+  "open-link": {
+    label: "Open Link — Button 打开外部网页",
+    data: openLinkMock,
+  },
 };
 
 export function App() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [protocolDialogOpen, setProtocolDialogOpen] = useState(false);
   const [trees, setTrees] = useState<SurfaceTree[]>([]);
   const [selectedMock, setSelectedMock] = useState<string>("cart-list-demo");
   const [streamMode, setStreamMode] = useState(true);
   const [streaming, setStreaming] = useState(false);
   const [streamProgress, setStreamProgress] = useState<string | null>(null);
 
+  /** 服务端请求状态 */
+  const [serverLoading, setServerLoading] = useState(false);
+  const [serverScenario, setServerScenario] = useState("cart");
+  const [serverPrompt, setServerPrompt] = useState("做一个购物车页面");
+
   /** 用于取消正在进行的流式模拟 */
   const abortRef = useRef(false);
 
-  /** 批量加载：Stream OFF，完整数据直接喂入 */
+  /**
+   * 用户动作处理回调。
+   * 根据 action.name 决定是本地更新数据模型还是发送到服务端。
+   * 当前演示最简单的"本地更新"场景：按钮点击 → 更新 Text 文案。
+   */
+  const handleUserAction = useCallback(
+    (action: import("@a2ui/core").UserActionPayload) => {
+      const store = getStore();
+      if (action.name === "updateMessage") {
+        // 本地数据更新：将 context 中的 newValue 写入 dataModel
+        const newValue = action.context?.newValue ?? "Updated!";
+        store.getState().setDataModelAt(action.surfaceId, "/message", newValue);
+      } else if (action.name === "openLink") {
+        // 打开外部链接：从 context 中取 url，新标签页打开
+        const url = action.context?.url;
+        if (url && typeof url === "string") {
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
+      }
+      // 未来扩展：其他 action.name → fetch/websocket 发送 userAction 到服务端
+    },
+    [],
+  );
+
+  /** 批量加载：Stream OFF，完整数据直接喂入（按行解析 JSONL） */
   const loadMockDataBatch = useCallback((mockKey: string) => {
     abortRef.current = true;
     destroyStore();
-    init(defaultRenderMap, (trees) => setTrees(trees));
+    init(defaultRenderMap, (trees) => setTrees(trees), handleUserAction);
 
     const rawData = MOCK_REGISTRY[mockKey].data;
-    const sp = new StreamProcessor();
-    sp.feed(rawData);
-    sp.flush();
+    // 使用按行解析，避免 AutoCompleteBuffer 一次性喂入多行时的提取遗漏
+    loadJsonlIntoStore(rawData);
 
     setSelectedMock(mockKey);
     setStreaming(false);
     setStreamProgress(null);
-  }, []);
+  }, [handleUserAction]);
 
   /** 流式加载：Stream ON，模拟逐 chunk 推送 */
   const loadMockDataStream = useCallback(async (mockKey: string) => {
@@ -109,7 +145,7 @@ export function App() {
       processedCount++;
       setTrees(trees);
       setStreamProgress(estimatedTotal ? `${processedCount}/${estimatedTotal}` : `${processedCount}`);
-    });
+    }, handleUserAction);
 
     setSelectedMock(mockKey);
     setStreaming(true);
@@ -131,6 +167,102 @@ export function App() {
     setStreaming(false);
     setStreamProgress(null);
   }, []);
+
+  /** 从服务端加载 A2UI 协议（AG-UI 标准 SSE 流式） */
+  const loadFromServer = useCallback(async () => {
+    setServerLoading(true);
+    setStreaming(true);
+    setStreamProgress("⏳ 正在请求服务端...");
+    abortRef.current = true;
+    destroyStore();
+    init(defaultRenderMap, (trees) => setTrees(trees), handleUserAction);
+    setTrees([]);
+
+    const sp = new StreamProcessor();
+    let messageCount = 0;
+
+    try {
+      const res = await fetch("/agent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: serverPrompt }],
+          forwardedProps: { scenario: serverScenario },
+        }),
+      });
+
+      if (!res.ok) {
+        const contentType = res.headers.get("content-type") ?? "";
+        let errMsg: string;
+        if (contentType.includes("json")) {
+          const err = await res.json();
+          errMsg = err.error ?? err.message ?? `HTTP ${res.status}`;
+        } else {
+          const text = await res.text().catch(() => res.statusText);
+          errMsg = text.slice(0, 200) || `HTTP ${res.status}`;
+        }
+        throw new Error(errMsg);
+      }
+
+      // AG-UI SSE 流式解析
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("无法读取响应流");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        // 按 SSE 换行切分
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? ""; // 最后一段不完整，保留
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+          const jsonStr = trimmed.slice(6); // 去掉 "data: " 前缀
+          try {
+            const event = JSON.parse(jsonStr);
+
+            // 更新进度
+            if (event.type === "RUN_STARTED") {
+              setStreamProgress("⏳ Agent 开始生成...");
+            } else if (event.type === "RUN_FINISHED") {
+              setStreamProgress(`✅ 完成，${messageCount} 条消息`);
+            }
+
+            // 提取 A2UI CUSTOM 事件
+            if (event.type === "CUSTOM" && event.name === "a2ui" && event.value) {
+              if (event.value._done) continue;
+              sp.feed(JSON.stringify(event.value) + "\n");
+              messageCount++;
+              setStreamProgress(`⏳ 已接收 ${messageCount} 条消息...`);
+            }
+          } catch {
+            // 非 JSON 行忽略
+          }
+        }
+      }
+
+      // SSE 流结束，冲刷缓冲区并立即刷新组件树
+      sp.flush();
+
+      console.log(`[loadFromServer] 成功加载 ${messageCount} 条 A2UI 消息 (scenario=${serverScenario})`);
+    } catch (err) {
+      console.error("[loadFromServer] 失败:", err);
+      setStreamProgress(`❌ ${err instanceof Error ? err.message : "请求失败"}`);
+    } finally {
+      setStreaming(false);
+      setServerLoading(false);
+    }
+  }, [serverPrompt, serverScenario, handleUserAction]);
 
   /** Stream 开关控制 */
   const loadMockData = useCallback(
@@ -201,12 +333,12 @@ export function App() {
           <span
             style={{
               fontSize: 13,
-              color: "#1677ff",
+              color: serverLoading ? "#fa8c16" : "#1677ff",
               fontWeight: 600,
               minWidth: 60,
             }}
           >
-            流式推送中 {streamProgress}
+            {serverLoading ? "服务端请求" : "流式推送中"} {streamProgress}
           </span>
         )}
         <Button type="primary" size="large" onClick={() => setDialogOpen(true)}>
@@ -219,6 +351,43 @@ export function App() {
           onClick={() => setErrorDialogOpen(true)}
         >
           查看错误 ({Object.keys(errorMap).length})
+        </Button>
+        <Button size="large" onClick={() => setProtocolDialogOpen(true)}>
+          查看 A2UI 协议
+        </Button>
+
+        {/* 分隔 */}
+        <span style={{ color: "#d9d9d9", fontSize: 20, margin: "0 4px" }}>|</span>
+
+        {/* 服务端测试 */}
+        <Select
+          value={serverScenario}
+          onChange={setServerScenario}
+          size="large"
+          style={{ minWidth: 160 }}
+          options={[
+            { value: "cart", label: "购物车" },
+            { value: "simple", label: "简单文本" },
+            { value: "data-binding", label: "数据绑定" },
+            { value: "list", label: "List 列表" },
+            { value: "button", label: "Button" },
+            { value: "image", label: "Image" },
+            { value: "icon", label: "Icon" },
+            { value: "video", label: "Video" },
+            { value: "card", label: "Card" },
+            { value: "column", label: "Column" },
+            { value: "open-link", label: "Open Link" },
+            { value: "local-update", label: "Local Update" },
+          ]}
+        />
+        <Button
+          type="primary"
+          size="large"
+          loading={serverLoading}
+          onClick={loadFromServer}
+          style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
+        >
+          {serverLoading ? "请求中..." : "测试服务"}
         </Button>
       </div>
 
@@ -233,10 +402,12 @@ export function App() {
                   marginLeft: 12,
                   fontSize: 13,
                   fontWeight: 400,
-                  color: "#1677ff",
+                  color: serverLoading ? "#fa8c16" : "#1677ff",
                 }}
               >
-                ⏳ 增量构建中… {streamProgress}
+                {serverLoading
+                  ? streamProgress
+                  : `⏳ 增量构建中… ${streamProgress}`}
               </span>
             )}
           </span>
@@ -382,6 +553,36 @@ export function App() {
             </div>
           ))
         )}
+      </Modal>
+
+      {/* A2UI 协议 JSON 弹窗 */}
+      <Modal
+        title={`A2UI 协议 — ${MOCK_REGISTRY[selectedMock]?.label ?? selectedMock}`}
+        open={protocolDialogOpen}
+        onCancel={() => setProtocolDialogOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setProtocolDialogOpen(false)}>
+            关闭
+          </Button>,
+        ]}
+        width={900}
+      >
+        <pre
+          style={{
+            backgroundColor: "#1e1e1e",
+            color: "#d4d4d4",
+            padding: "16px",
+            borderRadius: "4px",
+            maxHeight: "70vh",
+            overflow: "auto",
+            fontSize: "13px",
+            lineHeight: 1.7,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-all",
+          }}
+        >
+          {MOCK_REGISTRY[selectedMock]?.data ?? "暂无协议数据"}
+        </pre>
       </Modal>
     </div>
   );

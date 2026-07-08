@@ -1,1 +1,237 @@
-{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"root","component":{"Column":{"children":{"explicitList":["title","row_primary","row_default","row_mixed"]},"distribution":"start","alignment":"stretch"}}}]}}{"beginRendering":{"surfaceId":"main_surface","root":"root"}}{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"title","component":{"Text":{"text":{"literalString":"Button 组件演示"},"usageHint":"h1"}}},{"id":"row_primary","component":{"Row":{"children":{"explicitList":["btn_primary_text","btn_primary"]},"distribution":"start","alignment":"center"}}},{"id":"btn_primary_text","component":{"Text":{"text":{"literalString":"主要按钮 →"},"usageHint":"span"}}},{"id":"btn_primary","component":{"Button":{"child":"btn_primary_label","primary":true,"action":{"name":"primary_click","context":[{"key":"type","value":{"literalString":"primary"}}]}}}},{"id":"btn_primary_label","component":{"Text":{"text":{"literalString":"确认提交"},"usageHint":"span"}}},{"id":"row_default","component":{"Row":{"children":{"explicitList":["btn_default","btn_default_text"]},"distribution":"start","alignment":"center"}}},{"id":"btn_default","component":{"Button":{"child":"btn_default_label","primary":false,"action":{"name":"default_click"}}}},{"id":"btn_default_label","component":{"Text":{"text":{"literalString":"取消"},"usageHint":"span"}}},{"id":"btn_default_text","component":{"Text":{"text":{"literalString":"← 默认按钮"},"usageHint":"span"}}},{"id":"row_mixed","component":{"Row":{"children":{"explicitList":["btn_save","btn_delete"]},"distribution":"start","alignment":"center"}}},{"id":"btn_save","component":{"Button":{"child":"btn_save_label","primary":true,"action":{"name":"save","context":[{"key":"action","value":{"literalString":"save"}},{"key":"timestamp","value":{"literalNumber":1700000000000}}]}}}},{"id":"btn_save_label","component":{"Text":{"text":{"literalString":"保存"},"usageHint":"span"}}},{"id":"btn_delete","component":{"Button":{"child":"btn_delete_label","primary":false,"action":{"name":"delete","context":[{"key":"action","value":{"literalString":"delete"}},{"key":"confirm","value":{"literalBoolean":true}}]}}}},{"id":"btn_delete_label","component":{"Text":{"text":{"literalString":"删除"},"usageHint":"span"}}}]}}{"dataModelUpdate":{"surfaceId":"main_surface","contents":{}}}
+[
+  {
+    "surfaceUpdate": {
+      "surfaceId": "main_surface",
+      "components": [
+        {
+          "id": "root",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["title", "row_primary", "row_default", "row_mixed"]
+              },
+              "distribution": "start",
+              "alignment": "stretch"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "beginRendering": {
+      "surfaceId": "main_surface",
+      "root": "root"
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "main_surface",
+      "components": [
+        {
+          "id": "title",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Button 组件演示"
+              },
+              "usageHint": "h1"
+            }
+          }
+        },
+        {
+          "id": "row_primary",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": ["btn_primary_text", "btn_primary"]
+              },
+              "distribution": "start",
+              "alignment": "center"
+            }
+          }
+        },
+        {
+          "id": "btn_primary_text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "主要按钮 →"
+              },
+              "usageHint": "span"
+            }
+          }
+        },
+        {
+          "id": "btn_primary",
+          "component": {
+            "Button": {
+              "child": "btn_primary_label",
+              "primary": true,
+              "action": {
+                "name": "primary_click",
+                "context": [
+                  {
+                    "key": "type",
+                    "value": {
+                      "literalString": "primary"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "btn_primary_label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "确认提交"
+              },
+              "usageHint": "span"
+            }
+          }
+        },
+        {
+          "id": "row_default",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": ["btn_default", "btn_default_text"]
+              },
+              "distribution": "start",
+              "alignment": "center"
+            }
+          }
+        },
+        {
+          "id": "btn_default",
+          "component": {
+            "Button": {
+              "child": "btn_default_label",
+              "primary": false,
+              "action": {
+                "name": "default_click"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn_default_label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "取消"
+              },
+              "usageHint": "span"
+            }
+          }
+        },
+        {
+          "id": "btn_default_text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "← 默认按钮"
+              },
+              "usageHint": "span"
+            }
+          }
+        },
+        {
+          "id": "row_mixed",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": ["btn_save", "btn_delete"]
+              },
+              "distribution": "start",
+              "alignment": "center"
+            }
+          }
+        },
+        {
+          "id": "btn_save",
+          "component": {
+            "Button": {
+              "child": "btn_save_label",
+              "primary": true,
+              "action": {
+                "name": "save",
+                "context": [
+                  {
+                    "key": "action",
+                    "value": {
+                      "literalString": "save"
+                    }
+                  },
+                  {
+                    "key": "timestamp",
+                    "value": {
+                      "literalNumber": 1700000000000
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "btn_save_label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "保存"
+              },
+              "usageHint": "span"
+            }
+          }
+        },
+        {
+          "id": "btn_delete",
+          "component": {
+            "Button": {
+              "child": "btn_delete_label",
+              "primary": false,
+              "action": {
+                "name": "delete",
+                "context": [
+                  {
+                    "key": "action",
+                    "value": {
+                      "literalString": "delete"
+                    }
+                  },
+                  {
+                    "key": "confirm",
+                    "value": {
+                      "literalBoolean": true
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "btn_delete_label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "删除"
+              },
+              "usageHint": "span"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dataModelUpdate": {
+      "surfaceId": "main_surface",
+      "contents": {}
+    }
+  }
+]

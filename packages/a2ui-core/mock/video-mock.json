@@ -1,1 +1,61 @@
-{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"root","component":{"Column":{"children":{"explicitList":["video_title","video_player"]},"distribution":"start","alignment":"stretch"}}}]}}{"beginRendering":{"surfaceId":"main_surface","root":"root"}}{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"video_title","component":{"Text":{"text":{"literalString":"Video 组件演示 — Big Buck Bunny"},"usageHint":"h2"}}},{"id":"video_player","component":{"Video":{"url":{"literalString":"https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}}}}]}}{"dataModelUpdate":{"surfaceId":"main_surface","contents":{}}}
+[
+  {
+    "surfaceUpdate": {
+      "surfaceId": "main_surface",
+      "components": [
+        {
+          "id": "root",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["video_title", "video_player"]
+              },
+              "distribution": "start",
+              "alignment": "stretch"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "beginRendering": {
+      "surfaceId": "main_surface",
+      "root": "root"
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "main_surface",
+      "components": [
+        {
+          "id": "video_title",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Video 组件演示 — Big Buck Bunny"
+              },
+              "usageHint": "h2"
+            }
+          }
+        },
+        {
+          "id": "video_player",
+          "component": {
+            "Video": {
+              "url": {
+                "literalString": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dataModelUpdate": {
+      "surfaceId": "main_surface",
+      "contents": {}
+    }
+  }
+]

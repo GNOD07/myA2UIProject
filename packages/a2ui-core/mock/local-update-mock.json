@@ -1,0 +1,141 @@
+[
+  {
+    "surfaceUpdate": {
+      "surfaceId": "local-update-demo",
+      "components": [
+        {
+          "id": "root",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["msg", "btn", "open_btn"]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "local-update-demo",
+      "components": [
+        {
+          "id": "msg",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "/message"
+              },
+              "usageHint": "h3"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "local-update-demo",
+      "components": [
+        {
+          "id": "btn",
+          "component": {
+            "Button": {
+              "child": "btn_label",
+              "primary": true,
+              "action": {
+                "name": "updateMessage",
+                "context": [
+                  {
+                    "key": "newValue",
+                    "value": {
+                      "literalString": "✅ 按钮已点击！"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "local-update-demo",
+      "components": [
+        {
+          "id": "btn_label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "点击更新文案"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "local-update-demo",
+      "components": [
+        {
+          "id": "open_btn",
+          "component": {
+            "Button": {
+              "child": "open_btn_label",
+              "action": {
+                "name": "openLink",
+                "context": [
+                  {
+                    "key": "url",
+                    "value": {
+                      "literalString": "https://tongyi.aliyun.com/qianwen/"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "local-update-demo",
+      "components": [
+        {
+          "id": "open_btn_label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "打开千问"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dataModelUpdate": {
+      "surfaceId": "local-update-demo",
+      "contents": [
+        {
+          "key": "message",
+          "valueString": "Hello, A2UI! 👋"
+        }
+      ]
+    }
+  },
+  {
+    "beginRendering": {
+      "surfaceId": "local-update-demo",
+      "root": "root"
+    }
+  }
+]

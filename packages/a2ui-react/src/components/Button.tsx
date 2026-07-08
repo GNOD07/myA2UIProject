@@ -1,5 +1,6 @@
 import React from "react";
 import type { ComponentRenderer } from "@a2ui/core";
+import { getStore } from "@a2ui/core";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A2UI v0.8 Standard Catalog — Button 容器组件
@@ -34,7 +35,7 @@ export const Button: ComponentRenderer = (props, componentId?) => {
 /** treeBuilder 解析后的 Button 渲染属性 */
 export interface ResolvedButtonProps {
   primary?: boolean;
-  action?: { name: string; context?: unknown[] };
+  action?: { name: string; context?: Array<{ key: string; value: any }> };
   componentId?: string;
 }
 
@@ -48,7 +49,9 @@ export function ButtonRenderer({
   return React.createElement("button", {
     id: componentId ?? undefined,
     onClick: () => {
-      console.log("[A2UI Button] action:", action?.name, action?.context);
+      if (!componentId || !action) return;
+      const store = getStore();
+      store.getState().dispatchAction(componentId, action);
     },
     style: {
       padding: "8px 20px",

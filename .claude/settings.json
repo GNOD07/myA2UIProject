@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(pnpm dev:a2ui-server)",
+      "Bash(curl -s http://localhost:3002/health)",
+      "Bash(curl -s --max-time 10 -X POST http://localhost:3002/agent -H \"Content-Type: application/json\" -H \"Accept: text/event-stream\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"购物车\"}],\"forwardedProps\":{\"scenario\":\"cart\"}}')",
+      "Bash(curl -s --max-time 10 -X POST http://localhost:3002/api/generate -H \"Content-Type: application/json\" -H \"Accept: text/event-stream\" -d '{\"prompt\":\"购物车\",\"scenario\":\"cart\"}')",
+      "Bash(curl -s --max-time 10 -X POST \"http://localhost:3001/agent\" -H \"Content-Type: application/json\" -H \"Accept: text/event-stream\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"简单文本\"}],\"forwardedProps\":{\"scenario\":\"simple\"}}')",
+      "Bash(curl -s --max-time 10 -X POST \"http://localhost:3001/agent\" -H \"Content-Type: application/json\" -H \"Accept: text/event-stream\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"测试\"}],\"forwardedProps\":{\"scenario\":\"simple\"}}')",
+      "Bash(curl -s --max-time 10 -X POST \"http://localhost:3001/api/generate\" -H \"Content-Type: application/json\" -H \"Accept: text/event-stream\" -d '{\"prompt\":\"test\",\"scenario\":\"simple\"}')",
+      "Bash(curl -s --max-time 8 -X POST \"http://localhost:3002/agent\" -H \"Content-Type: application/json\" -H \"Accept: text/event-stream\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"forwardedProps\":{\"scenario\":\"simple\"}}')",
+      "Bash(curl -s --max-time 8 -X POST \"http://localhost:3001/agent\" -H \"Content-Type: application/json\" -H \"Accept: text/event-stream\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"forwardedProps\":{\"scenario\":\"simple\"}}')"
+    ]
+  }
+}

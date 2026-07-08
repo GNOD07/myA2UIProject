@@ -13,6 +13,8 @@
 import { createStore } from "zustand/vanilla";
 import type { A2UIStore, RenderMap, TreeChangeCallback } from "./types";
 import type { Surface, HydrateNode, A2UIError } from "./types";
+import { isBoundValue, resolveBoundValue } from "../binding/index.js";
+import { buildTree } from "../treeBuilder/index.js";
 
 export type { A2UIStore } from "./types";
 export * from "./types";
@@ -29,14 +31,39 @@ const EMPTY_DATA = {
 };
 
 /**
+ * onTreeChange 节流间隔（毫秒）。
+ * 100ms 平衡点：
+ *  - SSE 服务端（50-150ms 间隔）→ 保留增量流式效果
+ *  - playground 分块流（10ms 间隔）→ 合并防抖避免闪烁
+ */
+const TREE_CHANGE_DEBOUNCE_MS = 100;
+
+/**
  * 创建 store 实例
  */
-function createA2UIStore(renderMap: RenderMap = {}, onTreeChange?: TreeChangeCallback) {
+function createA2UIStore(
+  renderMap: RenderMap = {},
+  onTreeChange?: TreeChangeCallback,
+  onUserAction?: (action: import("./types").UserActionPayload) => void,
+) {
+  // 节流状态：闭包变量，不放入 zustand state
+  let treeChangeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // 节流版 onTreeChange：合并高频调用，延迟到空闲后统一触发
+  const debouncedTreeChange: TreeChangeCallback = () => {
+    if (treeChangeTimer) clearTimeout(treeChangeTimer);
+    treeChangeTimer = setTimeout(() => {
+      treeChangeTimer = null;
+      onTreeChange?.(buildTree());
+    }, TREE_CHANGE_DEBOUNCE_MS);
+  };
+
   return createStore<A2UIStore>()((set, get) => ({
     // 初始状态
     ...EMPTY_DATA,
     renderMap,
-    onTreeChange,
+    onTreeChange: debouncedTreeChange,
+    onUserAction,
 
     // ===== Surface CRUD =====
 
@@ -273,6 +300,59 @@ function createA2UIStore(renderMap: RenderMap = {}, onTreeChange?: TreeChangeCal
         return { dataModelMap: rest };
       });
     },
+
+    // ===== User Action Dispatch =====
+
+    dispatchAction: (
+      componentId: string,
+      action: { name: string; context?: Array<{ key: string; value: any }> },
+    ) => {
+      const state = get();
+      const node = state.hydrateNodeMap[componentId];
+      if (!node) return;
+      const surfaceId = node.ownerSurfaceId;
+
+      // 解析 context 中的 BoundValue
+      const resolvedContext: Record<string, any> = {};
+      if (action.context) {
+        const dataModel = state.dataModelMap[surfaceId];
+        for (const ctx of action.context) {
+          if (isBoundValue(ctx.value)) {
+            resolvedContext[ctx.key] = resolveBoundValue(ctx.value, dataModel);
+          } else {
+            resolvedContext[ctx.key] = ctx.value;
+          }
+        }
+      }
+
+      const payload: import("./types").UserActionPayload = {
+        name: action.name,
+        surfaceId,
+        sourceComponentId: componentId,
+        timestamp: new Date().toISOString(),
+        context: resolvedContext,
+      };
+
+      // 同步回调：应用层在此回调中调用 setDataModelAt 等更新数据模型
+      state.onUserAction?.(payload);
+
+      // 重建组件树：此时数据模型已被 onUserAction 回调更新（zustand set 是同步的）
+      state.onTreeChange?.(buildTree());
+    },
+
+    // ===== 流式节流 =====
+    /**
+     * 立即刷新组件树变更通知（跳过 debounce 等待）。
+     * 批量加载完成或流式结束时调用，确保最终状态立即渲染。
+     */
+    flushTreeChange: () => {
+      if (treeChangeTimer) {
+        clearTimeout(treeChangeTimer);
+        treeChangeTimer = null;
+      }
+      // 始终以最新 store 状态重建并通知
+      onTreeChange?.(buildTree());
+    },
   }));
 }
 
@@ -289,9 +369,10 @@ let storeInstance: ReturnType<typeof createA2UIStore> | null = null;
 export function initStore(
   renderMap: RenderMap = {},
   onTreeChange?: TreeChangeCallback,
+  onUserAction?: (action: import("./types").UserActionPayload) => void,
 ): ReturnType<typeof createA2UIStore> {
   if (!storeInstance) {
-    storeInstance = createA2UIStore(renderMap, onTreeChange);
+    storeInstance = createA2UIStore(renderMap, onTreeChange, onUserAction);
   }
   return storeInstance;
 }

@@ -3,7 +3,7 @@ export { useStore, useRootNode } from "./useStore";
 export { defaultRenderMap } from "./renderMap";
 export { FadeIn } from "./FadeIn";
 export { init, getStore, destroyStore, resetStore } from "@a2ui/core";
-export type { A2UIStore, A2UIStoreState, Surface, HydrateNode, RenderMap } from "@a2ui/core";
+export type { A2UIStore, A2UIStoreState, Surface, HydrateNode, RenderMap, UserActionPayload } from "@a2ui/core";
 
 // 渲染组件
 export {

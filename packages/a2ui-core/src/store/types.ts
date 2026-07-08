@@ -118,6 +118,23 @@ export interface HydrateNode {
 }
 
 /**
+ * 用户动作负载，由 dispatchAction 构造并传递给 onUserAction 回调。
+ * 所有 context BoundValue 已解析为实际值。
+ */
+export interface UserActionPayload {
+  /** 动作名称（来自组件的 action.name） */
+  name: string;
+  /** 发起动作的 Surface ID */
+  surfaceId: string;
+  /** 触发动作的源组件 ID */
+  sourceComponentId: string;
+  /** ISO 8601 时间戳 */
+  timestamp: string;
+  /** 已解析的 context key→value 映射 */
+  context: Record<string, any>;
+}
+
+/**
  * Store 状态
  */
 export interface A2UIStoreState {
@@ -135,6 +152,12 @@ export interface A2UIStoreState {
    * 由 init(renderMap, onTreeChange) 注入。
    */
   onTreeChange?: TreeChangeCallback;
+  /**
+   * 用户动作回调。组件触发 action 时调用，由应用层决定如何处理
+   * （本地更新数据模型、发送到服务端等）。
+   * 由 init(renderMap, onTreeChange, onUserAction) 注入。
+   */
+  onUserAction?: (action: UserActionPayload) => void;
   /**
    * 数据模型映射表：surfaceId → 嵌套数据对象。
    * 由 dataModelUpdate 消息写入，buildTree 时读取用于解析 BoundValue。
@@ -198,6 +221,23 @@ export interface A2UIStoreActions {
   getDataModelValue: (surfaceId: string, dataPath: string) => any;
   /** 清除指定 surface 的数据模型 */
   clearDataModel: (surfaceId: string) => void;
+
+  // ===== User Action Dispatch =====
+  /**
+   * 分发用户动作。解析 context 中的 BoundValue，构造 UserActionPayload，
+   * 调用 onUserAction 回调，然后自动触发 onTreeChange 重建组件树。
+   */
+  dispatchAction: (
+    componentId: string,
+    action: { name: string; context?: Array<{ key: string; value: any }> },
+  ) => void;
+
+  // ===== 流式节流 =====
+  /**
+   * 立即刷新组件树变更通知（跳过 debounce）。
+   * 用于批量加载完成或流式结束时，确保最后一次渲染立即触发。
+   */
+  flushTreeChange: () => void;
 }
 
 /**

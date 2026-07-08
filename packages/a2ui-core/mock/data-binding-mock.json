@@ -1,1 +1,269 @@
-{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"root","component":{"Column":{"children":{"explicitList":["title","user_card","item_list"]}}}}]}}{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"title","component":{"Text":{"text":{"path":"/page/title","literalString":"加载中..."},"usageHint":"h2"}}}]}}{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"user_card","component":{"Card":{"child":"user_content"}}}]}}{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"user_content","component":{"Column":{"children":{"explicitList":["user_name","user_avatar"]}}}}]}}{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"user_name","component":{"Text":{"text":{"path":"/user/name"},"usageHint":"h3"}}}]}}{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"user_avatar","component":{"Image":{"url":{"path":"/user/avatar"},"usageHint":"avatar"}}}]}}{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"item_list","component":{"Row":{"children":{"template":{"componentId":"item_template","dataBinding":"/items"}}}}}]}}{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"item_template","component":{"Card":{"child":"item_content"}}}]}}{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"item_content","component":{"Column":{"children":{"explicitList":["item_name","item_price"]}}}}]}}{"surfaceUpdate":{"surfaceId":"s1","components":[{"id":"item_name","component":{"Text":{"text":{"path":"name"},"usageHint":"body"}}},{"id":"item_price","component":{"Text":{"text":{"path":"price"},"usageHint":"caption"}}}]}}{"dataModelUpdate":{"surfaceId":"s1","contents":[{"key":"page","valueMap":[{"key":"title","valueString":"用户信息卡片"}]},{"key":"user","valueMap":[{"key":"name","valueString":"张三"},{"key":"avatar","valueString":"https://i.pravatar.cc/150?u=zhangsan"}]}]}}{"dataModelUpdate":{"surfaceId":"s1","path":"/items","contents":[{"key":"a","valueMap":[{"key":"name","valueString":"商品 Alpha"},{"key":"price","valueString":"¥99.00"}]},{"key":"b","valueMap":[{"key":"name","valueString":"商品 Beta"},{"key":"price","valueString":"¥199.00"}]},{"key":"c","valueMap":[{"key":"name","valueString":"商品 Gamma"},{"key":"price","valueString":"¥299.00"}]}]}}{"beginRendering":{"surfaceId":"s1","root":"root"}}
+[
+  {
+    "surfaceUpdate": {
+      "surfaceId": "s1",
+      "components": [
+        {
+          "id": "root",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["title", "user_card", "item_list"]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "s1",
+      "components": [
+        {
+          "id": "title",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "/page/title",
+                "literalString": "加载中..."
+              },
+              "usageHint": "h2"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "s1",
+      "components": [
+        {
+          "id": "user_card",
+          "component": {
+            "Card": {
+              "child": "user_content"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "s1",
+      "components": [
+        {
+          "id": "user_content",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["user_name", "user_avatar"]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "s1",
+      "components": [
+        {
+          "id": "user_name",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "/user/name"
+              },
+              "usageHint": "h3"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "s1",
+      "components": [
+        {
+          "id": "user_avatar",
+          "component": {
+            "Image": {
+              "url": {
+                "path": "/user/avatar"
+              },
+              "usageHint": "avatar"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "s1",
+      "components": [
+        {
+          "id": "item_list",
+          "component": {
+            "Row": {
+              "children": {
+                "template": {
+                  "componentId": "item_template",
+                  "dataBinding": "/items"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "s1",
+      "components": [
+        {
+          "id": "item_template",
+          "component": {
+            "Card": {
+              "child": "item_content"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "s1",
+      "components": [
+        {
+          "id": "item_content",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["item_name", "item_price"]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "s1",
+      "components": [
+        {
+          "id": "item_name",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "name"
+              },
+              "usageHint": "body"
+            }
+          }
+        },
+        {
+          "id": "item_price",
+          "component": {
+            "Text": {
+              "text": {
+                "path": "price"
+              },
+              "usageHint": "caption"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dataModelUpdate": {
+      "surfaceId": "s1",
+      "contents": [
+        {
+          "key": "page",
+          "valueMap": [
+            {
+              "key": "title",
+              "valueString": "用户信息卡片"
+            }
+          ]
+        },
+        {
+          "key": "user",
+          "valueMap": [
+            {
+              "key": "name",
+              "valueString": "张三"
+            },
+            {
+              "key": "avatar",
+              "valueString": "https://i.pravatar.cc/150?u=zhangsan"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "dataModelUpdate": {
+      "surfaceId": "s1",
+      "path": "/items",
+      "contents": [
+        {
+          "key": "a",
+          "valueMap": [
+            {
+              "key": "name",
+              "valueString": "商品 Alpha"
+            },
+            {
+              "key": "price",
+              "valueString": "¥99.00"
+            }
+          ]
+        },
+        {
+          "key": "b",
+          "valueMap": [
+            {
+              "key": "name",
+              "valueString": "商品 Beta"
+            },
+            {
+              "key": "price",
+              "valueString": "¥199.00"
+            }
+          ]
+        },
+        {
+          "key": "c",
+          "valueMap": [
+            {
+              "key": "name",
+              "valueString": "商品 Gamma"
+            },
+            {
+              "key": "price",
+              "valueString": "¥299.00"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "beginRendering": {
+      "surfaceId": "s1",
+      "root": "root"
+    }
+  }
+]

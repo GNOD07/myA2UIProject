@@ -1,0 +1,87 @@
+[
+  {
+    "beginRendering": {
+      "surfaceId": "open-link-demo",
+      "root": "root"
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "open-link-demo",
+      "components": [
+        {
+          "id": "root",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["info", "btn"]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "open-link-demo",
+      "components": [
+        {
+          "id": "info",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "点击下方按钮打开外部网页"
+              },
+              "usageHint": "body"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "open-link-demo",
+      "components": [
+        {
+          "id": "btn",
+          "component": {
+            "Button": {
+              "child": "btn_label",
+              "primary": true,
+              "action": {
+                "name": "openLink",
+                "context": [
+                  {
+                    "key": "url",
+                    "value": {
+                      "literalString": "https://github.com"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "open-link-demo",
+      "components": [
+        {
+          "id": "btn_label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "打开 GitHub"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+]

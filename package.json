@@ -5,6 +5,7 @@
   "description": "A2UI Playground - AI-powered UI generation platform",
   "scripts": {
     "dev:playground": "pnpm --filter a2ui-playground dev",
+    "dev:a2ui-server": "pnpm --filter a2ui-server dev",
     "dev:server": "pnpm --filter a2ui-playground-server dev",
     "build:core": "pnpm --filter @a2ui/core build",
     "build:react": "pnpm --filter @a2ui/react build",

@@ -9,6 +9,16 @@ export default defineConfig({
     fs: {
       allow: ["../..", "../../packages"],
     },
+    proxy: {
+      "/api": {
+        target: "http://localhost:3002",
+        changeOrigin: true,
+      },
+      "/agent": {
+        target: "http://localhost:3002",
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {

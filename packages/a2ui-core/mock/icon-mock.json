@@ -1,1 +1,184 @@
-{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"root","component":{"Column":{"children":{"explicitList":["row1","row2"]},"distribution":"start","alignment":"stretch"}}}]}}{"beginRendering":{"surfaceId":"main_surface","root":"root"}}{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"row1","component":{"Row":{"children":{"explicitList":["icon_search","icon_home","icon_person","icon_settings","icon_notifications","icon_mail"]},"distribution":"start","alignment":"center"}}},{"id":"icon_search","component":{"Icon":{"name":{"literalString":"search"}}}},{"id":"icon_home","component":{"Icon":{"name":{"literalString":"home"}}}},{"id":"icon_person","component":{"Icon":{"name":{"literalString":"person"}}}},{"id":"icon_settings","component":{"Icon":{"name":{"literalString":"settings"}}}},{"id":"icon_notifications","component":{"Icon":{"name":{"literalString":"notifications"}}}},{"id":"icon_mail","component":{"Icon":{"name":{"literalString":"mail"}}}},{"id":"row2","component":{"Row":{"children":{"explicitList":["icon_star","icon_favorite","icon_delete","icon_check","icon_close","icon_menu"]},"distribution":"start","alignment":"center"}}},{"id":"icon_star","component":{"Icon":{"name":{"literalString":"star"}}}},{"id":"icon_favorite","component":{"Icon":{"name":{"literalString":"favorite"}}}},{"id":"icon_delete","component":{"Icon":{"name":{"literalString":"delete"}}}},{"id":"icon_check","component":{"Icon":{"name":{"literalString":"check"}}}},{"id":"icon_close","component":{"Icon":{"name":{"literalString":"close"}}}},{"id":"icon_menu","component":{"Icon":{"name":{"literalString":"menu"}}}}]}}{"dataModelUpdate":{"surfaceId":"main_surface","contents":{}}}
+[
+  {
+    "surfaceUpdate": {
+      "surfaceId": "main_surface",
+      "components": [
+        {
+          "id": "root",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": ["row1", "row2"]
+              },
+              "distribution": "start",
+              "alignment": "stretch"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "beginRendering": {
+      "surfaceId": "main_surface",
+      "root": "root"
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "main_surface",
+      "components": [
+        {
+          "id": "row1",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": ["icon_search", "icon_home", "icon_person", "icon_settings", "icon_notifications", "icon_mail"]
+              },
+              "distribution": "start",
+              "alignment": "center"
+            }
+          }
+        },
+        {
+          "id": "icon_search",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "search"
+              }
+            }
+          }
+        },
+        {
+          "id": "icon_home",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "home"
+              }
+            }
+          }
+        },
+        {
+          "id": "icon_person",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "person"
+              }
+            }
+          }
+        },
+        {
+          "id": "icon_settings",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "settings"
+              }
+            }
+          }
+        },
+        {
+          "id": "icon_notifications",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "notifications"
+              }
+            }
+          }
+        },
+        {
+          "id": "icon_mail",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "mail"
+              }
+            }
+          }
+        },
+        {
+          "id": "row2",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": ["icon_star", "icon_favorite", "icon_delete", "icon_check", "icon_close", "icon_menu"]
+              },
+              "distribution": "start",
+              "alignment": "center"
+            }
+          }
+        },
+        {
+          "id": "icon_star",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "star"
+              }
+            }
+          }
+        },
+        {
+          "id": "icon_favorite",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "favorite"
+              }
+            }
+          }
+        },
+        {
+          "id": "icon_delete",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "delete"
+              }
+            }
+          }
+        },
+        {
+          "id": "icon_check",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "check"
+              }
+            }
+          }
+        },
+        {
+          "id": "icon_close",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "close"
+              }
+            }
+          }
+        },
+        {
+          "id": "icon_menu",
+          "component": {
+            "Icon": {
+              "name": {
+                "literalString": "menu"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dataModelUpdate": {
+      "surfaceId": "main_surface",
+      "contents": {}
+    }
+  }
+]
