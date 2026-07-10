@@ -5,17 +5,17 @@ import { resolve } from "path";
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3001,
+    port: 5173,  // 前端端口改为 5173（Vite 默认端口）
     fs: {
       allow: ["../..", "../../packages"],
     },
     proxy: {
       "/api": {
-        target: "http://localhost:3002",
+        target: "http://localhost:3002",  // 代理到后端 3002 端口
         changeOrigin: true,
       },
       "/agent": {
-        target: "http://localhost:3002",
+        target: "http://localhost:3002",  // 代理到后端 3002 端口
         changeOrigin: true,
       },
     },

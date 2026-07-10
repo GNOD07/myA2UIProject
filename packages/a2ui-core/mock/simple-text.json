@@ -1,32 +1,22 @@
-[
-  {
-    "surfaceUpdate": {
-      "surfaceId": "main_surface",
-      "components": [
-        {
-          "id": "root",
-          "component": {
-            "Text": {
-              "text": {
-                "literalString": "Hello, A2UI!"
-              },
-              "usageHint": "h4"
-            }
+{
+  "beginRendering": {
+    "surfaceId": "surface-001",
+    "root": "text-component"
+  },
+  "surfaceUpdate": {
+    "surfaceId": "surface-001",
+    "components": [
+      {
+        "id": "text-component",
+        "component": {
+          "Text": {
+            "text": {
+              "literalString": "Hello!"
+            },
+            "usageHint": "h4"
           }
         }
-      ]
-    }
-  },
-  {
-    "dataModelUpdate": {
-      "surfaceId": "main_surface",
-      "contents": {}
-    }
-  },
-  {
-    "beginRendering": {
-      "surfaceId": "main_surface",
-      "root": "root"
-    }
+      }
+    ]
   }
-]
+}

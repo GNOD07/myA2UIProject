@@ -1,0 +1,32 @@
+[
+  {
+    "surfaceUpdate": {
+      "surfaceId": "main_surface",
+      "components": [
+        {
+          "id": "root",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Hello, A2UI!"
+              },
+              "usageHint": "h4"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dataModelUpdate": {
+      "surfaceId": "main_surface",
+      "contents": {}
+    }
+  },
+  {
+    "beginRendering": {
+      "surfaceId": "main_surface",
+      "root": "root"
+    }
+  }
+]
