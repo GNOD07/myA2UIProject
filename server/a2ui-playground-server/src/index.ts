@@ -5,8 +5,17 @@ import bodyParser from "koa-bodyparser";
 import { createReadStream } from "fs";
 import { join } from "path";
 import dotenv from "dotenv";
+import OpenAI from "openai";
 
 dotenv.config();
+
+// 初始化 OpenAI 客户端（兼容 DeepSeek 等 OpenAI 兼容 API）
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || "sk-placeholder",
+  baseURL: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
+});
+
+const CHAT_MODEL = process.env.CHAT_MODEL || "deepseek-chat";
 
 const app = new Koa();
 const router = new Router();
@@ -105,6 +114,73 @@ router.post("/api/generate-ui", async (ctx) => {
       "Access-Control-Allow-Origin": "*",
     });
     ctx.res.write(`data: ${JSON.stringify({ type: "ERROR", content: error.message })}\n\n`);
+    ctx.res.write(`data: [DONE]\n\n`);
+    ctx.res.end();
+  }
+});
+
+// 模型对话接口（SSE 流式输出）
+router.post("/api/chat", async (ctx) => {
+  try {
+    const { messages } = ctx.request.body as { messages: Array<{ role: string; content: string }> };
+
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      ctx.status = 400;
+      ctx.body = { error: "messages 参数不能为空" };
+      return;
+    }
+
+    console.log(`[chat] 收到对话请求，消息数: ${messages.length}`);
+
+    // 设置 SSE 响应头
+    ctx.status = 200;
+    ctx.set({
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "Access-Control-Allow-Origin": "*",
+    });
+
+    // 发送开始事件
+    ctx.res.write(`data: ${JSON.stringify({ type: "CHAT_STARTED", content: "模型开始生成..." })}\n\n`);
+
+    // 调用 OpenAI 兼容 API 进行流式对话
+    const stream = await openai.chat.completions.create({
+      model: CHAT_MODEL,
+      messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+      stream: true,
+    });
+
+    let fullContent = "";
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content;
+      if (delta) {
+        fullContent += delta;
+        ctx.res.write(`data: ${JSON.stringify({ type: "CHAT_CHUNK", content: delta })}\n\n`);
+      }
+    }
+
+    console.log(`[chat] 模型回复完成，共 ${fullContent.length} 字符`);
+
+    // 发送完成事件
+    ctx.res.write(
+      `data: ${JSON.stringify({ type: "CHAT_FINISHED", content: fullContent })}\n\n`
+    );
+    ctx.res.write(`data: [DONE]\n\n`);
+    ctx.res.end();
+  } catch (error: any) {
+    console.error("[chat] 错误:", error);
+    ctx.status = 200; // SSE 场景下状态码应为 200
+    ctx.set({
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "Access-Control-Allow-Origin": "*",
+    });
+    ctx.res.write(
+      `data: ${JSON.stringify({ type: "CHAT_ERROR", content: error.message || "未知错误" })}\n\n`
+    );
     ctx.res.write(`data: [DONE]\n\n`);
     ctx.res.end();
   }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layout, Input, Button, Typography, Card, message } from 'antd';
+import { Layout, Input, Button, Typography, Card, message, Switch } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
 import {
   init,
@@ -42,11 +42,15 @@ const Playground: React.FC = () => {
   const [inputValue, setInputValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
+  // 模型对话测试模式
+  const [chatMode, setChatMode] = useState<boolean>(false);
+
   // A2UI 渲染相关状态
   const [trees, setTrees] = useState<SurfaceTree[]>([]);
   const [streaming, setStreaming] = useState<boolean>(false);
   const [streamProgress, setStreamProgress] = useState<string | null>(null);
   const abortRef = useRef(false);
+  const streamingMsgIdRef = useRef<string | null>(null); // 跟踪正在流式输出的消息 ID
 
   // 初始化 A2UI
   useEffect(() => {
@@ -175,6 +179,111 @@ const Playground: React.FC = () => {
     }
   };
 
+  /**
+   * 纯模型对话：调用 /api/chat 流式返回模型回复，通过 onChunk 回调实时更新 UI
+   */
+  const fetchChatFromServer = async (
+    history: Message[],
+    onChunk: (partialContent: string) => void,
+  ) => {
+    abortRef.current = false;
+    setStreaming(true);
+    setStreamProgress('💬 模型思考中...');
+
+    // 构建消息历史
+    const chatMessages = [
+      { role: 'system', content: '你是一个有帮助的AI助手。请用中文回答用户的问题。' },
+      ...history.map(m => ({
+        role: m.role === 'user' ? 'user' as const : 'assistant' as const,
+        content: m.content,
+      })),
+    ];
+
+    let replyContent = '';
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify({ messages: chatMessages }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      if (!response.body) {
+        throw new Error('响应体为空');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        if (abortRef.current) break;
+
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
+          const jsonStr = trimmed.slice(6);
+          if (jsonStr === '[DONE]') {
+            setStreamProgress('✅ 回复完成');
+            setTimeout(() => {
+              setStreaming(false);
+              setStreamProgress(null);
+            }, 500);
+            break;
+          }
+
+          try {
+            const event: SSEEvent = JSON.parse(jsonStr);
+
+            if (event.type === 'CHAT_STARTED') {
+              setStreamProgress('💬 模型生成中...');
+            } else if (event.type === 'CHAT_CHUNK' && event.content) {
+              replyContent += event.content;
+              onChunk(replyContent); // 实时回调，更新 UI
+              setStreamProgress(`💬 模型生成中... ${replyContent.length} 字符`);
+            } else if (event.type === 'CHAT_FINISHED') {
+              setStreamProgress(`✅ 回复完成，共 ${replyContent.length} 字符`);
+            } else if (event.type === 'CHAT_ERROR') {
+              throw new Error(event.content || '模型调用错误');
+            }
+          } catch (e) {
+            if (e instanceof Error && e.message !== 'Unexpected token u in JSON at position 0') {
+              console.error('解析聊天事件失败:', e);
+              if (e.message.includes('模型调用错误')) throw e;
+            }
+          }
+        }
+      }
+
+      console.log(`[Chat] 模型回复完成，共 ${replyContent.length} 字符`);
+      return replyContent;
+    } catch (error) {
+      console.error('[Chat] 请求失败:', error);
+      setStreamProgress('❌ 模型调用失败');
+      throw error;
+    } finally {
+      if (!abortRef.current) {
+        setStreaming(false);
+        setStreamProgress(null);
+      }
+    }
+  };
+
   // 发送消息处理函数
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
@@ -191,17 +300,44 @@ const Playground: React.FC = () => {
     setLoading(true);
 
     try {
-      // 调用服务器 SSE 接口
-      await fetchFromServerWithSSE(inputValue);
+      if (chatMode) {
+        // 纯模型对话模式：先插入占位消息，再通过 onChunk 流式更新
+        const streamingId = (Date.now() + 1).toString();
+        streamingMsgIdRef.current = streamingId;
 
-      // 添加 AI 回复
-      const aiReply: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'ai',
-        content: `已根据您的请求："${inputValue}" 生成相应的 UI 界面，请在右侧预览区域查看效果。`,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, aiReply]);
+        const placeholderMsg: Message = {
+          id: streamingId,
+          role: 'ai',
+          content: '💬 思考中...',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, placeholderMsg]);
+
+        await fetchChatFromServer(
+          [...messages, newUserMessage],
+          (partialContent: string) => {
+            // 实时更新占位消息的内容
+            setMessages(prev =>
+              prev.map(m =>
+                m.id === streamingId ? { ...m, content: partialContent } : m
+              )
+            );
+          }
+        );
+
+        streamingMsgIdRef.current = null;
+      } else {
+        // A2UI 界面生成模式
+        await fetchFromServerWithSSE(inputValue);
+
+        const aiReply: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'ai',
+          content: `已根据您的请求："${inputValue}" 生成相应的 UI 界面，请在右侧预览区域查看效果。`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, aiReply]);
+      }
     } catch (error) {
       console.error('生成失败:', error);
       message.error('请求服务器失败，请检查后端服务是否运行');
@@ -248,10 +384,29 @@ const Playground: React.FC = () => {
           padding: '16px',
           background: '#fafafa',
           borderBottom: '1px solid #e8e8e8',
-          fontSize: '18px',
-          fontWeight: 'bold'
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}>
-          A2UI 对话助手
+          <span style={{ fontSize: '18px', fontWeight: 'bold' }}>A2UI 对话助手</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Text style={{ fontSize: 12, color: chatMode ? '#1677ff' : '#8c8c8c' }}>
+              {chatMode ? '💬 对话测试' : '🎨 UI生成'}
+            </Text>
+            <Switch
+              checked={chatMode}
+              onChange={(checked) => {
+                setChatMode(checked);
+                if (checked) {
+                  message.info('已开启模型对话测试模式，发送消息将直接与模型对话');
+                } else {
+                  message.info('已切换回 UI 生成模式');
+                }
+              }}
+              checkedChildren="对话"
+              unCheckedChildren="UI"
+            />
+          </div>
         </Header>
 
         <Content style={{
