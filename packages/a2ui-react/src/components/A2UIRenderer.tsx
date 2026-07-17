@@ -12,6 +12,7 @@ import { RowRenderer } from "./Row";
 import { ListRenderer } from "./List";
 import { ButtonRenderer } from "./Button";
 import { CardRenderer } from "./Card";
+import { TextFieldRenderer } from "./TextField";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A2UIRenderer — VNode → React Element 调度器
@@ -164,6 +165,14 @@ function renderComponent(
     case "Video":
       return React.createElement(VideoRenderer, {
         url: props.url,
+        componentId,
+      });
+    case "TextField":
+      return React.createElement(TextFieldRenderer, {
+        label: props.label,
+        text: props.text,
+        textFieldType: props.textFieldType,
+        validationRegexp: props.validationRegexp,
         componentId,
       });
     default:

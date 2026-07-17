@@ -29,6 +29,9 @@ export type { ButtonProps, ResolvedButtonProps } from "./Button";
 export { Card, CardRenderer } from "./Card";
 export type { CardProps, ResolvedCardProps } from "./Card";
 
+export { TextField, TextFieldRenderer } from "./TextField";
+export type { TextFieldProps, ResolvedTextFieldProps } from "./TextField";
+
 // 调度器
 export { A2UIRenderer } from "./A2UIRenderer";
 export type { A2UIRendererProps } from "./A2UIRenderer";

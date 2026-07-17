@@ -54,9 +54,11 @@ export interface BoundValue {
 /**
  * 将 dataModelUpdate.contents 的邻接表格式转为嵌套 JS 对象。
  *
- * 协议示例：
+ * 协议示例（标准数组格式）：
  *   [{key:"user", valueMap:[{key:"name",valueString:"Bob"}]}]
  *   → { user: { name: "Bob" } }
+ *
+ * 容错：valueMap 为对象格式（非标准）时自动转换为数组再处理
  */
 export function parseAdjacencyListToObject(
   entries: DataModelEntry[],
@@ -67,7 +69,21 @@ export function parseAdjacencyListToObject(
     if (entry.valueMap !== undefined) {
       // valueMap → 递归转对象
       const mapObj: Record<string, any> = {};
-      for (const item of entry.valueMap) {
+
+      // 容错：LLM 可能生成对象格式 {"key":"value"} 而非标准数组 [{key, valueString}]
+      const items: Array<{ key: string; valueString?: string; valueNumber?: number; valueBoolean?: boolean }> =
+        Array.isArray(entry.valueMap)
+          ? entry.valueMap
+          : Object.entries(entry.valueMap as Record<string, unknown>).map(
+              ([k, v]) => ({
+                key: k,
+                valueString: typeof v === 'string' ? v : undefined,
+                valueNumber: typeof v === 'number' ? v : undefined,
+                valueBoolean: typeof v === 'boolean' ? v : undefined,
+              }),
+            );
+
+      for (const item of items) {
         if (item.valueString !== undefined) {
           mapObj[item.key] = item.valueString;
         } else if (item.valueNumber !== undefined) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layout, Input, Button, Typography, Card, message, Switch } from 'antd';
+import { Layout, Input, Button, Typography, Card, message, Switch, Modal } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
 import {
   init,
@@ -52,6 +52,10 @@ const Playground: React.FC = () => {
   const abortRef = useRef(false);
   const streamingMsgIdRef = useRef<string | null>(null); // 跟踪正在流式输出的消息 ID
 
+  // 原始 JSONL 数据（用于弹窗展示）
+  const [rawJsonl, setRawJsonl] = useState<string>('');
+  const [jsonModalVisible, setJsonModalVisible] = useState<boolean>(false);
+
   // 初始化 A2UI
   useEffect(() => {
     init(defaultRenderMap, (trees) => setTrees(trees), handleUserAction);
@@ -84,6 +88,7 @@ const Playground: React.FC = () => {
     destroyStore();
     init(defaultRenderMap, (trees) => setTrees(trees), handleUserAction);
     setTrees([]);
+    setRawJsonl('');
     setStreaming(true);
     setStreamProgress('⏳ 请求服务器中...');
 
@@ -151,6 +156,7 @@ const Playground: React.FC = () => {
 
             // 处理 CHUNK 事件：原始 JSON 碎片，直接喂给 StreamProcessor
             if (event.type === 'CHUNK' && event.content) {
+              setRawJsonl(prev => prev + event.content);
               sp.feed(event.content);
               chunkCount++;
               setStreamProgress(`⏳ 流式传输中... ${chunkCount} 个碎片`);
@@ -280,6 +286,109 @@ const Playground: React.FC = () => {
       if (!abortRef.current) {
         setStreaming(false);
         setStreamProgress(null);
+      }
+    }
+  };
+
+  /**
+   * 本地 Mock 流式模拟：通过 SSE 逐条接收 mock 消息，模拟真实流式传输
+   */
+  const loadLocalMock = async (mockName: string) => {
+    abortRef.current = false;
+
+    // 重置 A2UI 存储
+    destroyStore();
+    init(defaultRenderMap, (trees) => setTrees(trees), handleUserAction);
+    setTrees([]);
+    setRawJsonl('');
+    setStreaming(true);
+    setStreamProgress(`⏳ 请求 Mock: ${mockName}...`);
+
+    const sp = new StreamProcessor();
+    let chunkCount = 0;
+
+    try {
+      const response = await fetch(`/api/mock/${mockName}`);
+
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.error || `HTTP ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error('响应体为空');
+      }
+
+      // 以 SSE 方式逐条读取
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        if (abortRef.current) break;
+
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
+          const jsonStr = trimmed.slice(6); // 去掉 "data: " 前缀
+          if (jsonStr === '[DONE]') {
+            setStreamProgress(`✅ 完成，共 ${chunkCount} 条消息`);
+            setTimeout(() => {
+              setStreaming(false);
+              setStreamProgress(null);
+            }, 500);
+            break;
+          }
+
+          try {
+            const event: SSEEvent = JSON.parse(jsonStr);
+
+            if (event.type === 'RUN_STARTED') {
+              setStreamProgress(`⏳ ${event.content}`);
+            } else if (event.type === 'RUN_FINISHED') {
+              setStreamProgress(`✅ ${event.content}`);
+            } else if (event.type === 'ERROR') {
+              throw new Error(event.content || '服务器错误');
+            } else if (event.type === 'CHUNK' && event.content) {
+              // 记录原始 JSONL（用于弹窗展示）
+              setRawJsonl((prev) => prev + event.content);
+              // 喂入 StreamProcessor，增量渲染
+              sp.feed(event.content);
+              chunkCount++;
+              setStreamProgress(`⏳ 流式接收中... 第 ${chunkCount} 条消息`);
+            }
+          } catch (e) {
+            if (e instanceof Error && e.message !== 'Unexpected token u in JSON at position 0') {
+              console.error('解析 SSE 事件失败:', e);
+              if (e.message.includes('服务器错误')) throw e;
+            }
+          }
+        }
+      }
+
+      // 冲刷缓冲区
+      sp.flush();
+
+      console.log(`[LocalMock] 成功加载 ${mockName}，共 ${chunkCount} 条消息`);
+    } catch (error: any) {
+      console.error('[LocalMock] 加载失败:', error);
+      message.error(`加载 Mock 失败: ${error.message}`);
+      setStreamProgress('❌ 加载失败');
+      setTimeout(() => {
+        setStreaming(false);
+        setStreamProgress(null);
+      }, 1500);
+    } finally {
+      if (!abortRef.current) {
+        // 延迟清理，让用户看到完成状态
       }
     }
   };
@@ -513,21 +622,41 @@ const Playground: React.FC = () => {
         }}>
           <Card
             title={
-              <span>
-                A2UI 实时渲染预览区
-                {streaming && streamProgress && (
-                  <span
-                    style={{
-                      marginLeft: 12,
-                      fontSize: 13,
-                      fontWeight: 400,
-                      color: '#1677ff',
-                    }}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>
+                  A2UI 实时渲染预览区
+                  {streaming && streamProgress && (
+                    <span
+                      style={{
+                        marginLeft: 12,
+                        fontSize: 13,
+                        fontWeight: 400,
+                        color: '#1677ff',
+                      }}
+                    >
+                      {streamProgress}
+                    </span>
+                  )}
+                </span>
+                {rawJsonl && (
+                  <Button
+                    type="link"
+                    size="small"
+                    onClick={() => setJsonModalVisible(true)}
                   >
-                    {streamProgress}
-                  </span>
+                    查看 A2UI JSON
+                  </Button>
                 )}
-              </span>
+                <Button
+                  type="default"
+                  size="small"
+                  loading={streaming}
+                  onClick={() => loadLocalMock('agent-back')}
+                  style={{ marginLeft: 8 }}
+                >
+                  📋 加载 Dashboard Mock
+                </Button>
+              </div>
             }
             styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column' } }}
           >
@@ -596,6 +725,47 @@ const Playground: React.FC = () => {
           </Card>
         </Content>
       </Layout>
+
+      {/* JSON 查看弹窗 */}
+      <Modal
+        title="A2UI JSON 数据"
+        open={jsonModalVisible}
+        onCancel={() => setJsonModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setJsonModalVisible(false)}>关闭</Button>,
+        ]}
+        width={800}
+      >
+        <pre style={{
+          maxHeight: '60vh',
+          overflow: 'auto',
+          backgroundColor: '#f5f5f5',
+          padding: 16,
+          borderRadius: 4,
+          fontSize: 13,
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-all',
+        }}>
+          {(() => {
+            try {
+              // 尝试格式化 JSONL（每行独立格式化）
+              return rawJsonl
+                .split('\n')
+                .filter(line => line.trim())
+                .map(line => {
+                  try {
+                    return JSON.stringify(JSON.parse(line), null, 2);
+                  } catch {
+                    return line;
+                  }
+                })
+                .join('\n');
+            } catch {
+              return rawJsonl;
+            }
+          })()}
+        </pre>
+      </Modal>
     </Layout>
   );
 };

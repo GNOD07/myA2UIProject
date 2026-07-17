@@ -17,6 +17,7 @@ export {
   ListRenderer,
   ButtonRenderer,
   CardRenderer,
+  TextFieldRenderer,
 } from "./components";
 export type {
   A2UIRendererProps,
@@ -38,4 +39,6 @@ export type {
   ResolvedButtonProps,
   CardProps,
   ResolvedCardProps,
+  TextFieldProps,
+  ResolvedTextFieldProps,
 } from "./components";

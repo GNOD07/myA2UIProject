@@ -1,109 +1,410 @@
 {
   "beginRendering": {
-    "surfaceId": "dish-card-surface",
-    "root": "dish-card"
-  },
+    "surfaceId": "main",
+    "root": "root-column"
+  }
+}
+{
   "surfaceUpdate": {
-    "surfaceId": "dish-card-surface",
+    "surfaceId": "main",
     "components": [
       {
-        "id": "dish-card",
-        "component": {
-          "Card": {
-            "child": "card-content"
-          }
-        }
-      },
-      {
-        "id": "card-content",
+        "id": "root-column",
         "component": {
           "Column": {
             "children": {
-              "explicitList": ["dish-image", "dish-info", "action-row"]
+              "explicitList": [
+                "page-title",
+                "stats-row",
+                "section-title-orders",
+                "order-list"
+              ]
             },
-            "alignment": "start"
+            "distribution": "start",
+            "alignment": "stretch"
           }
         }
       },
       {
-        "id": "dish-image",
-        "component": {
-          "Image": {
-            "url": {
-              "literalString": "https://example.com/dish.jpg"
-            },
-            "usageHint": "mediumFeature",
-            "fit": "cover"
-          }
-        }
-      },
-      {
-        "id": "dish-info",
-        "component": {
-          "Column": {
-            "children": {
-              "explicitList": ["dish-name", "dish-desc", "dish-price"]
-            },
-            "alignment": "start"
-          }
-        }
-      },
-      {
-        "id": "dish-name",
+        "id": "page-title",
         "component": {
           "Text": {
-            "text": { "literalString": "宫保鸡丁" },
-            "usageHint": "h3"
+            "text": {
+              "literalString": "数据概览"
+            },
+            "usageHint": "h2"
           }
         }
       },
       {
-        "id": "dish-desc",
-        "component": {
-          "Text": {
-            "text": { "literalString": "经典川菜，鸡肉鲜嫩，花生香脆" },
-            "usageHint": "body"
-          }
-        }
-      },
-      {
-        "id": "dish-price",
-        "component": {
-          "Text": {
-            "text": { "literalString": "¥38" },
-            "usageHint": "h4"
-          }
-        }
-      },
-      {
-        "id": "action-row",
+        "id": "stats-row",
         "component": {
           "Row": {
-            "children": { "explicitList": ["add-btn"] },
-            "distribution": "end",
+            "children": {
+              "explicitList": [
+                "card-orders",
+                "card-revenue",
+                "card-new-users",
+                "card-active-users"
+              ]
+            },
+            "distribution": "spaceEvenly",
             "alignment": "center"
           }
         }
       },
       {
-        "id": "add-btn",
+        "id": "card-orders",
         "component": {
-          "Button": {
-            "child": "add-btn-text",
-            "primary": true,
-            "action": {
-              "name": "addToCart",
-              "context": [
-                { "key": "dishId", "value": { "literalString": "dish-001" } }
+          "Card": {
+            "child": "card-orders-content"
+          }
+        }
+      },
+      {
+        "id": "card-orders-content",
+        "component": {
+          "Column": {
+            "children": {
+              "explicitList": [
+                "icon-orders",
+                "value-orders",
+                "label-orders"
               ]
+            },
+            "distribution": "start",
+            "alignment": "center"
+          }
+        }
+      },
+      {
+        "id": "icon-orders",
+        "component": {
+          "Icon": {
+            "name": {
+              "literalString": "shoppingCart"
             }
           }
         }
       },
       {
-        "id": "add-btn-text",
+        "id": "value-orders",
         "component": {
-          "Text": { "text": { "literalString": "加入购物车" } }
+          "Text": {
+            "text": {
+              "literalString": "1,286"
+            },
+            "usageHint": "h3"
+          }
+        }
+      },
+      {
+        "id": "label-orders",
+        "component": {
+          "Text": {
+            "text": {
+              "literalString": "今日订单数"
+            },
+            "usageHint": "caption"
+          }
+        }
+      },
+      {
+        "id": "card-revenue",
+        "component": {
+          "Card": {
+            "child": "card-revenue-content"
+          }
+        }
+      },
+      {
+        "id": "card-revenue-content",
+        "component": {
+          "Column": {
+            "children": {
+              "explicitList": [
+                "icon-revenue",
+                "value-revenue",
+                "label-revenue"
+              ]
+            },
+            "distribution": "start",
+            "alignment": "center"
+          }
+        }
+      },
+      {
+        "id": "icon-revenue",
+        "component": {
+          "Icon": {
+            "name": {
+              "literalString": "payment"
+            }
+          }
+        }
+      },
+      {
+        "id": "value-revenue",
+        "component": {
+          "Text": {
+            "text": {
+              "literalString": "¥38,560"
+            },
+            "usageHint": "h3"
+          }
+        }
+      },
+      {
+        "id": "label-revenue",
+        "component": {
+          "Text": {
+            "text": {
+              "literalString": "今日收入"
+            },
+            "usageHint": "caption"
+          }
+        }
+      },
+      {
+        "id": "card-new-users",
+        "component": {
+          "Card": {
+            "child": "card-new-users-content"
+          }
+        }
+      },
+      {
+        "id": "card-new-users-content",
+        "component": {
+          "Column": {
+            "children": {
+              "explicitList": [
+                "icon-new-users",
+                "value-new-users",
+                "label-new-users"
+              ]
+            },
+            "distribution": "start",
+            "alignment": "center"
+          }
+        }
+      },
+      {
+        "id": "icon-new-users",
+        "component": {
+          "Icon": {
+            "name": {
+              "literalString": "person"
+            }
+          }
+        }
+      },
+      {
+        "id": "value-new-users",
+        "component": {
+          "Text": {
+            "text": {
+              "literalString": "342"
+            },
+            "usageHint": "h3"
+          }
+        }
+      },
+      {
+        "id": "label-new-users",
+        "component": {
+          "Text": {
+            "text": {
+              "literalString": "新增用户"
+            },
+            "usageHint": "caption"
+          }
+        }
+      },
+      {
+        "id": "card-active-users",
+        "component": {
+          "Card": {
+            "child": "card-active-users-content"
+          }
+        }
+      },
+      {
+        "id": "card-active-users-content",
+        "component": {
+          "Column": {
+            "children": {
+              "explicitList": [
+                "icon-active-users",
+                "value-active-users",
+                "label-active-users"
+              ]
+            },
+            "distribution": "start",
+            "alignment": "center"
+          }
+        }
+      },
+      {
+        "id": "icon-active-users",
+        "component": {
+          "Icon": {
+            "name": {
+              "literalString": "star"
+            }
+          }
+        }
+      },
+      {
+        "id": "value-active-users",
+        "component": {
+          "Text": {
+            "text": {
+              "literalString": "2,189"
+            },
+            "usageHint": "h3"
+          }
+        }
+      },
+      {
+        "id": "label-active-users",
+        "component": {
+          "Text": {
+            "text": {
+              "literalString": "活跃用户"
+            },
+            "usageHint": "caption"
+          }
+        }
+      },
+      {
+        "id": "section-title-orders",
+        "component": {
+          "Text": {
+            "text": {
+              "literalString": "最近订单"
+            },
+            "usageHint": "h3"
+          }
+        }
+      },
+      {
+        "id": "order-list",
+        "component": {
+          "List": {
+            "children": {
+              "template": {
+                "componentId": "order-item-card",
+                "dataBinding": "/orders"
+              }
+            },
+            "direction": "vertical",
+            "alignment": "stretch"
+          }
+        }
+      },
+      {
+        "id": "order-item-card",
+        "component": {
+          "Card": {
+            "child": "order-item-row"
+          }
+        }
+      },
+      {
+        "id": "order-item-row",
+        "component": {
+          "Row": {
+            "children": {
+              "explicitList": [
+                "order-id-text",
+                "order-customer-text",
+                "order-amount-text",
+                "order-status-text"
+              ]
+            },
+            "distribution": "spaceBetween",
+            "alignment": "center"
+          }
+        }
+      },
+      {
+        "id": "order-id-text",
+        "component": {
+          "Text": {
+            "text": {
+              "path": "orderId"
+            },
+            "usageHint": "body"
+          }
+        }
+      },
+      {
+        "id": "order-customer-text",
+        "component": {
+          "Text": {
+            "text": {
+              "path": "customer"
+            },
+            "usageHint": "body"
+          }
+        }
+      },
+      {
+        "id": "order-amount-text",
+        "component": {
+          "Text": {
+            "text": {
+              "path": "amount"
+            },
+            "usageHint": "body"
+          }
+        }
+      },
+      {
+        "id": "order-status-text",
+        "component": {
+          "Text": {
+            "text": {
+              "path": "status"
+            },
+            "usageHint": "body"
+          }
+        }
+      }
+    ]
+  }
+}
+{
+  "dataModelUpdate": {
+    "surfaceId": "main",
+    "path": "/orders",
+    "contents": [
+      {
+        "key": "0",
+        "valueMap": {
+          "orderId": "ORD-20240115-001",
+          "customer": "张三",
+          "amount": "¥1,280",
+          "status": "已完成"
+        }
+      },
+      {
+        "key": "1",
+        "valueMap": {
+          "orderId": "ORD-20240115-002",
+          "customer": "李四",
+          "amount": "¥856",
+          "status": "配送中"
+        }
+      },
+      {
+        "key": "2",
+        "valueMap": {
+          "orderId": "ORD-20240115-003",
+          "customer": "王五",
+          "amount": "¥2,340",
+          "status": "待付款"
         }
       }
     ]
