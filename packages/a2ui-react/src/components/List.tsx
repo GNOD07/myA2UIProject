@@ -23,7 +23,7 @@ export const List: ComponentRenderer = (props, componentId?) => {
   return {
     __a2ui_container: true,
     type: "List",
-    props: { direction, alignment },
+    props: { direction, alignment, style: props.style },
     componentId,
     childIds: children?.explicitList ?? [],
     template: children?.template ?? undefined,
@@ -35,6 +35,7 @@ export interface ResolvedListProps {
   direction?: string;
   alignment?: string;
   componentId?: string;
+  style?: Record<string, any>;
 }
 
 /** React 渲染组件：VNode → DOM */
@@ -42,6 +43,7 @@ export function ListRenderer({
   direction,
   alignment,
   componentId,
+  style,
   children,
 }: ResolvedListProps & { children: React.ReactNode }) {
   return React.createElement("div", {
@@ -53,6 +55,7 @@ export function ListRenderer({
       alignItems: ALIGNMENT_CSS[alignment ?? ""] ?? "stretch",
       gap: 8,
       padding: 8,
+      ...(style ?? {}),
     },
   }, children);
 }

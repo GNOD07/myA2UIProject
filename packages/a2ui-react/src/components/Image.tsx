@@ -19,6 +19,7 @@ export interface ResolvedImageProps {
   fit?: string;
   usageHint?: string;
   componentId?: string;
+  style?: Record<string, any>;
 }
 
 const HINT_STYLES: Record<string, Record<string, any>> = {
@@ -38,12 +39,13 @@ export const Image: ComponentRenderer = (props, componentId?) => ({
     url: props.url,
     fit: props.fit ?? "cover",
     usageHint: props.usageHint,
+    style: props.style,
   },
   componentId,
 });
 
 /** React 渲染组件：VNode → DOM */
-export function ImageRenderer({ url, fit, usageHint, componentId }: ResolvedImageProps) {
+export function ImageRenderer({ url, fit, usageHint, componentId, style }: ResolvedImageProps) {
   return React.createElement("img", {
     id: componentId ?? undefined,
     src: String(url ?? ""),
@@ -53,6 +55,7 @@ export function ImageRenderer({ url, fit, usageHint, componentId }: ResolvedImag
       objectFit: fit ?? "cover",
       borderRadius: 8,
       ...(usageHint ? HINT_STYLES[usageHint] ?? {} : {}),
+      ...(style ?? {}),
     },
   });
 }

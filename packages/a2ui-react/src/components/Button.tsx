@@ -26,7 +26,7 @@ export const Button: ComponentRenderer = (props, componentId?) => {
   return {
     __a2ui_container: true,
     type: "Button",
-    props: { primary, action },
+    props: { primary, action, style: props.style },
     componentId,
     childIds: child ? [child] : [],
   };
@@ -37,6 +37,7 @@ export interface ResolvedButtonProps {
   primary?: boolean;
   action?: { name: string; context?: Array<{ key: string; value: any }> };
   componentId?: string;
+  style?: Record<string, any>;
 }
 
 /** React 渲染组件：VNode → DOM */
@@ -44,6 +45,7 @@ export function ButtonRenderer({
   primary,
   action,
   componentId,
+  style,
   children,
 }: ResolvedButtonProps & { children: React.ReactNode }) {
   return React.createElement("button", {
@@ -65,6 +67,7 @@ export function ButtonRenderer({
       display: "inline-flex",
       alignItems: "center",
       gap: 4,
+      ...(style ?? {}),
     },
   }, children);
 }

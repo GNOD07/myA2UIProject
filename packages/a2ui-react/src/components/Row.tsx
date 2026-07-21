@@ -23,7 +23,7 @@ export const Row: ComponentRenderer = (props, componentId?) => {
   return {
     __a2ui_container: true,
     type: "Row",
-    props: { distribution, alignment },
+    props: { distribution, alignment, style: props.style },
     componentId,
     childIds: children?.explicitList ?? [],
     template: children?.template ?? undefined,
@@ -35,6 +35,7 @@ export interface ResolvedRowProps {
   distribution?: string;
   alignment?: string;
   componentId?: string;
+  style?: Record<string, any>;
 }
 
 /** React 渲染组件：VNode → DOM */
@@ -42,6 +43,7 @@ export function RowRenderer({
   distribution,
   alignment,
   componentId,
+  style,
   children,
 }: ResolvedRowProps & { children: React.ReactNode }) {
   return React.createElement("div", {
@@ -56,6 +58,7 @@ export function RowRenderer({
       border: "1px dashed #bae7ff",
       borderRadius: 8,
       flexWrap: "wrap",
+      ...(style ?? {}),
     },
   }, children);
 }

@@ -13,6 +13,7 @@ import { ListRenderer } from "./List";
 import { ButtonRenderer } from "./Button";
 import { CardRenderer } from "./Card";
 import { TextFieldRenderer } from "./TextField";
+import { TabsRenderer } from "./Tabs";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A2UIRenderer — VNode → React Element 调度器
@@ -128,6 +129,8 @@ function renderContainer(
       return React.createElement(ButtonRenderer, { ...props, componentId, children });
     case "Card":
       return React.createElement(CardRenderer, { componentId, children });
+    case "Tabs":
+      return React.createElement(TabsRenderer, { ...props, componentId, children });
     default:
       return React.createElement(
         "pre",
@@ -148,6 +151,7 @@ function renderComponent(
       return React.createElement(TextRenderer, {
         text: props.text,
         usageHint: props.usageHint,
+        style: props.style,
         componentId,
       });
     case "Image":
@@ -155,16 +159,19 @@ function renderComponent(
         url: props.url,
         fit: props.fit,
         usageHint: props.usageHint,
+        style: props.style,
         componentId,
       });
     case "Icon":
       return React.createElement(IconRenderer, {
         name: props.name,
+        style: props.style,
         componentId,
       });
     case "Video":
       return React.createElement(VideoRenderer, {
         url: props.url,
+        style: props.style,
         componentId,
       });
     case "TextField":
@@ -173,6 +180,7 @@ function renderComponent(
         text: props.text,
         textFieldType: props.textFieldType,
         validationRegexp: props.validationRegexp,
+        style: props.style,
         componentId,
       });
     default:

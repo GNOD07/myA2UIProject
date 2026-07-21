@@ -15,6 +15,7 @@ export interface VideoProps {
 export interface ResolvedVideoProps {
   url: string;
   componentId?: string;
+  style?: Record<string, any>;
 }
 
 /** renderMap 入口：协议 props → ComponentVNode */
@@ -23,12 +24,13 @@ export const Video: ComponentRenderer = (props, componentId?) => ({
   type: "Video",
   props: {
     url: props.url,
+    style: props.style,
   },
   componentId,
 });
 
 /** React 渲染组件：VNode → DOM */
-export function VideoRenderer({ url, componentId }: ResolvedVideoProps) {
+export function VideoRenderer({ url, componentId, style }: ResolvedVideoProps) {
   return React.createElement("video", {
     id: componentId ?? undefined,
     src: String(url ?? ""),
@@ -38,6 +40,7 @@ export function VideoRenderer({ url, componentId }: ResolvedVideoProps) {
       maxWidth: "100%",
       borderRadius: 8,
       backgroundColor: "#000",
+      ...(style ?? {}),
     },
   });
 }

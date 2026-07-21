@@ -32,6 +32,9 @@ export type { CardProps, ResolvedCardProps } from "./Card";
 export { TextField, TextFieldRenderer } from "./TextField";
 export type { TextFieldProps, ResolvedTextFieldProps } from "./TextField";
 
+export { Tabs, TabsRenderer } from "./Tabs";
+export type { TabsProps, ResolvedTabsProps } from "./Tabs";
+
 // 调度器
 export { A2UIRenderer } from "./A2UIRenderer";
 export type { A2UIRendererProps } from "./A2UIRenderer";

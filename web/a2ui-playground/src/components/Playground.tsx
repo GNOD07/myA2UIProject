@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout, Input, Button, Typography, Card, message, Switch, Modal } from 'antd';
-import { SendOutlined } from '@ant-design/icons';
+import { SendOutlined, CameraOutlined, CloseOutlined } from '@ant-design/icons';
 import {
   init,
   destroyStore,
@@ -27,6 +27,7 @@ interface SSEEvent {
   name?: string;
   value?: any;
   content?: string;
+  sessionId?: string;
 }
 
 const Playground: React.FC = () => {
@@ -51,6 +52,12 @@ const Playground: React.FC = () => {
   const [streamProgress, setStreamProgress] = useState<string | null>(null);
   const abortRef = useRef(false);
   const streamingMsgIdRef = useRef<string | null>(null); // 跟踪正在流式输出的消息 ID
+  const isFirstTurnRef = useRef<boolean>(true); // 追踪是否为首轮对话（首轮需要重置 store）
+  const sessionIdRef = useRef<string>(''); // 服务端会话 ID，用于维护多轮对话历史
+  const fileInputRef = useRef<HTMLInputElement>(null); // 隐藏的图片上传 input
+
+  // 图片数据（base64 data URL），用户粘贴或上传后设置
+  const [imageData, setImageData] = useState<string | null>(null);
 
   // 原始 JSONL 数据（用于弹窗展示）
   const [rawJsonl, setRawJsonl] = useState<string>('');
@@ -79,16 +86,20 @@ const Playground: React.FC = () => {
   };
 
   /**
-   * 从服务器获取流式响应
+   * 从服务器获取流式响应（支持多轮对话）
    */
   const fetchFromServerWithSSE = async (prompt: string) => {
     abortRef.current = false;
 
-    // 重置 A2UI 存储
-    destroyStore();
-    init(defaultRenderMap, (trees) => setTrees(trees), handleUserAction);
-    setTrees([]);
-    setRawJsonl('');
+    // 仅首轮重置 store，后续轮次保留现有状态以支持增量更新
+    if (isFirstTurnRef.current) {
+      destroyStore();
+      init(defaultRenderMap, (trees) => setTrees(trees), handleUserAction);
+      setTrees([]);
+      setRawJsonl('');
+      sessionIdRef.current = ''; // 新会话，重置 sessionId
+    }
+
     setStreaming(true);
     setStreamProgress('⏳ 请求服务器中...');
 
@@ -102,8 +113,15 @@ const Playground: React.FC = () => {
           'Content-Type': 'application/json',
           Accept: 'text/event-stream',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({
+          prompt,
+          sessionId: sessionIdRef.current || undefined,
+          imageData: imageData || undefined,
+        }),
       });
+
+      // 发送后清空图片
+      if (imageData) setImageData(null);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -150,6 +168,10 @@ const Playground: React.FC = () => {
               setStreamProgress('⏳ Agent 开始生成...');
             } else if (event.type === 'RUN_FINISHED') {
               setStreamProgress(`✅ 完成，共接收 ${chunkCount} 个碎片`);
+              // 存储服务端返回的 sessionId，后续请求带上以维护对话历史
+              if (event.sessionId) {
+                sessionIdRef.current = event.sessionId;
+              }
             } else if (event.type === 'ERROR') {
               throw new Error(event.content || '服务器错误');
             }
@@ -301,6 +323,8 @@ const Playground: React.FC = () => {
     init(defaultRenderMap, (trees) => setTrees(trees), handleUserAction);
     setTrees([]);
     setRawJsonl('');
+    // 加载 Mock 后重置首轮标记，后续发送消息时从全新状态开始
+    isFirstTurnRef.current = true;
     setStreaming(true);
     setStreamProgress(`⏳ 请求 Mock: ${mockName}...`);
 
@@ -436,13 +460,17 @@ const Playground: React.FC = () => {
 
         streamingMsgIdRef.current = null;
       } else {
-        // A2UI 界面生成模式
+        // A2UI 界面生成模式（服务端维护对话历史，前端只管传 sessionId）
+        const isFirst = isFirstTurnRef.current;
         await fetchFromServerWithSSE(inputValue);
+        if (isFirst) isFirstTurnRef.current = false;
 
         const aiReply: Message = {
           id: (Date.now() + 1).toString(),
           role: 'ai',
-          content: `已根据您的请求："${inputValue}" 生成相应的 UI 界面，请在右侧预览区域查看效果。`,
+          content: isFirst
+            ? `已根据您的请求："${inputValue}" 生成相应的 UI 界面。`
+            : `已根据您的微调请求更新了界面。`,
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, aiReply]);
@@ -470,6 +498,65 @@ const Playground: React.FC = () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  /** File → base64 data URL */
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+
+  /** 粘贴图片（Ctrl+V）→ 设置 imageData */
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) setImageData(await fileToDataUrl(file));
+        return;
+      }
+    }
+  };
+
+  /** 文件选择 → 设置 imageData */
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setImageData(await fileToDataUrl(file));
+    // 重置以便重复选同一文件
+    e.target.value = '';
+  };
+
+  /** 重置 UI：清空 store、对话状态和 sessionId，准备全新 UI 生成 */
+  const handleResetUI = () => {
+    isFirstTurnRef.current = true;
+    sessionIdRef.current = '';
+    destroyStore();
+    init(defaultRenderMap, (trees) => setTrees(trees), handleUserAction);
+    setTrees([]);
+    setRawJsonl('');
+    message.success('UI 已重置，可以开始新的界面生成');
+  };
+
+  /** 预览区点击：从事件目标向上查找带 componentId 的 DOM 元素，自动填入输入框 */
+  const handlePreviewClick = (e: React.MouseEvent) => {
+    let el = e.target as HTMLElement | null;
+    const container = e.currentTarget as HTMLElement;
+    while (el && el !== container) {
+      const compId = el.id;
+      if (compId && hydrateNodeMap[compId]) {
+        setInputValue(prev => {
+          const ref = `@${compId} `;
+          return prev ? prev + ref : ref;
+        });
+        message.info(`已引用组件: ${compId}`);
+        return;
+      }
+      el = el.parentElement;
     }
   };
 
@@ -572,24 +659,44 @@ const Playground: React.FC = () => {
           background: '#fff',
           borderTop: '1px solid #e8e8e8',
         }}>
+          {/* 图片预览 */}
+          {imageData && (
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: 8 }}>
+              <img src={imageData} alt="预览"
+                style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 6, border: '1px solid #d9d9d9' }} />
+              <Button type="text" size="small" danger icon={<CloseOutlined />}
+                onClick={() => setImageData(null)}
+                style={{ position: 'absolute', top: -10, right: -10, background: '#fff', borderRadius: '50%' }} />
+            </div>
+          )}
+
           <TextArea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onPressEnter={handleKeyDown}
-            placeholder="输入你的界面需求..."
+            onPaste={handlePaste}
+            placeholder="输入界面需求，可粘贴截图..."
             autoSize={{ minRows: 2, maxRows: 6 }}
             style={{ marginBottom: '8px' }}
           />
-          <Button
-            type="primary"
-            icon={<SendOutlined />}
-            onClick={handleSendMessage}
-            loading={loading}
-            disabled={!inputValue.trim() || loading}
-            block
-          >
-            发送
-          </Button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              onClick={handleSendMessage}
+              loading={loading}
+              disabled={!inputValue.trim() || loading}
+              style={{ flex: 1 }}
+            >
+              发送
+            </Button>
+            <Button
+              icon={<CameraOutlined />}
+              onClick={() => fileInputRef.current?.click()}
+              title="上传图片"
+            />
+            <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleFileChange} />
+          </div>
 
           {streaming && streamProgress && (
             <div style={{
@@ -656,17 +763,30 @@ const Playground: React.FC = () => {
                 >
                   📋 加载 Dashboard Mock
                 </Button>
+                <Button
+                  type="text"
+                  size="small"
+                  onClick={handleResetUI}
+                  disabled={trees.length === 0}
+                  style={{ marginLeft: 8 }}
+                >
+                  🔄 新对话
+                </Button>
               </div>
             }
             styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column' } }}
           >
-            <div style={{
+            <div
+              onClick={handlePreviewClick}
+              title="点击组件可快速引用其 ID 到输入框"
+              style={{
               flex: 1,
               overflow: 'auto',
               padding: '16px',
               backgroundColor: '#ffffff',
               border: '1px solid #f0f0f0',
-              borderRadius: '4px'
+              borderRadius: '4px',
+              cursor: 'pointer',
             }}>
               {trees.length === 0 ? (
                 <div style={{

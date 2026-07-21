@@ -17,7 +17,7 @@ export const Card: ComponentRenderer = (props, componentId?) => {
   return {
     __a2ui_container: true,
     type: "Card",
-    props: {},
+    props: { style: props.style },
     componentId,
     childIds: child ? [child] : [],
   };
@@ -26,11 +26,13 @@ export const Card: ComponentRenderer = (props, componentId?) => {
 /** treeBuilder 解析后的 Card 渲染属性 */
 export interface ResolvedCardProps {
   componentId?: string;
+  style?: Record<string, any>;
 }
 
 /** React 渲染组件：VNode → DOM */
 export function CardRenderer({
   componentId,
+  style,
   children,
 }: ResolvedCardProps & { children: React.ReactNode }) {
   return React.createElement("div", {
@@ -41,6 +43,7 @@ export function CardRenderer({
       borderRadius: 12,
       padding: 20,
       boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+      ...(style ?? {}),
     },
   }, children);
 }

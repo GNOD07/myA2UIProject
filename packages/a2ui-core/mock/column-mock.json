@@ -1,0 +1,5 @@
+{"beginRendering":{"surfaceId":"main_surface","root":"root-col"}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"root-col","component":{"Column":{"children":{"explicitList":["text-1","text-2","text-3"]},"distribution":"start","alignment":"stretch"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"text-1","component":{"Text":{"text":{"literalString":"大标题 - 欢迎使用 A2UI"},"usageHint":"h1"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"text-2","component":{"Text":{"text":{"literalString":"这是正文内容，用于展示 Column 布局下的多个 Text 组件排列效果。"},"usageHint":"h2"}}}]}}
+{"surfaceUpdate":{"surfaceId":"main_surface","components":[{"id":"text-3","component":{"Text":{"text":{"literalString":"© 2024 A2UI 脚注信息"},"usageHint":"h3"}}}]}}

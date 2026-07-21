@@ -17,6 +17,7 @@ export interface ResolvedTextProps {
   text: string;
   usageHint?: string;
   componentId?: string;
+  style?: Record<string, any>;
 }
 
 /** renderMap 入口：协议 props → ComponentVNode */
@@ -26,12 +27,13 @@ export const Text: ComponentRenderer = (props, componentId?) => ({
   props: {
     text: props.text,
     usageHint: props.usageHint,
+    style: props.style,
   },
   componentId,
 });
 
 /** React 渲染组件：VNode → DOM */
-export function TextRenderer({ text, usageHint, componentId }: ResolvedTextProps) {
+export function TextRenderer({ text, usageHint, componentId, style }: ResolvedTextProps) {
   // h1~h5 使用对应 HTML 标题标签，caption/body 使用 span
   // 注意：不能渲染原生 <caption> 元素，它只能是 <table> 的子元素
   const isHeading = usageHint && /^h[1-5]$/.test(usageHint);
@@ -54,6 +56,7 @@ export function TextRenderer({ text, usageHint, componentId }: ResolvedTextProps
                   : 14,
         fontWeight: usageHint?.startsWith?.("h") ? 600 : 400,
         color: usageHint === "caption" ? "#999" : "#333",
+        ...(style ?? {}),
       },
     },
     String(text ?? ""),

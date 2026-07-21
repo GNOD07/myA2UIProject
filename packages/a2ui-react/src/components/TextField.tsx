@@ -29,6 +29,7 @@ export interface ResolvedTextFieldProps {
   textFieldType?: string;
   validationRegexp?: string;
   componentId?: string;
+  style?: Record<string, any>;
 }
 
 /** renderMap 入口：协议 props → ComponentVNode */
@@ -40,6 +41,7 @@ export const TextField: ComponentRenderer = (props, componentId?) => ({
     text: props.text,
     textFieldType: props.textFieldType,
     validationRegexp: props.validationRegexp,
+    style: props.style,
   },
   componentId,
 });
@@ -51,6 +53,7 @@ export function TextFieldRenderer({
   textFieldType,
   validationRegexp,
   componentId,
+  style,
 }: ResolvedTextFieldProps) {
   const isLongText = textFieldType === "longText";
   const [value, setValue] = useState(text ?? "");
@@ -103,6 +106,7 @@ export function TextFieldRenderer({
         flexDirection: "column",
         gap: 4,
         width: "100%",
+        ...(style ?? {}),
       },
     },
     // label

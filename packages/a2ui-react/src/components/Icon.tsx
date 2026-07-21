@@ -18,6 +18,7 @@ export interface IconProps {
 export interface ResolvedIconProps {
   name: string;
   componentId?: string;
+  style?: Record<string, any>;
 }
 
 /** Material 图标 SVG path 集合（协议 standard catalog 定义） */
@@ -78,12 +79,13 @@ export const Icon: ComponentRenderer = (props, componentId?) => ({
   type: "Icon",
   props: {
     name: props.name,
+    style: props.style,
   },
   componentId,
 });
 
 /** React 渲染组件：VNode → DOM */
-export function IconRenderer({ name, componentId }: ResolvedIconProps) {
+export function IconRenderer({ name, componentId, style }: ResolvedIconProps) {
   const svgPath = ICON_PATHS[name] ?? ICON_PATHS.info;
   return React.createElement(
     "span",
@@ -97,6 +99,7 @@ export function IconRenderer({ name, componentId }: ResolvedIconProps) {
         width: 24,
         height: 24,
         verticalAlign: "middle",
+        ...(style ?? {}),
       },
     },
     React.createElement(

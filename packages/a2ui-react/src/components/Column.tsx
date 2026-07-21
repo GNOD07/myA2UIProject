@@ -23,7 +23,7 @@ export const Column: ComponentRenderer = (props, componentId?) => {
   return {
     __a2ui_container: true,
     type: "Column",
-    props: { distribution, alignment },
+    props: { distribution, alignment, style: props.style },
     componentId,
     childIds: children?.explicitList ?? [],
     template: children?.template ?? undefined,
@@ -35,6 +35,7 @@ export interface ResolvedColumnProps {
   distribution?: string;
   alignment?: string;
   componentId?: string;
+  style?: Record<string, any>;
 }
 
 /** React 渲染组件：VNode → DOM */
@@ -42,6 +43,7 @@ export function ColumnRenderer({
   distribution,
   alignment,
   componentId,
+  style,
   children,
 }: ResolvedColumnProps & { children: React.ReactNode }) {
   return React.createElement("div", {
@@ -55,6 +57,7 @@ export function ColumnRenderer({
       padding: 8,
       border: "1px dashed #d9d9d9",
       borderRadius: 8,
+      ...(style ?? {}),
     },
   }, children);
 }
